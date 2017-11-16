@@ -34,7 +34,7 @@ class HaloEFT_core(object):
                               'b1_3',
                               'b2_2',
                               'b2_3',
-                              'b3'
+                              'b3',
                               'bG2_2',
                               'bG2_3',
                               'bdG2',
