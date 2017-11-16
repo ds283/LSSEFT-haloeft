@@ -38,7 +38,7 @@ class HaloEFT_core(object):
                               'bG2_2',
                               'bG2_3',
                               'bdG2',
-                              'bGamma3'
+                              'bGamma3',
                               'b1_1_b1_1',
                               'b1_2_b1_2',
                               'b1_1_b1_2',
