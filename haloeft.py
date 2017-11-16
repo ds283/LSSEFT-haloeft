@@ -453,7 +453,12 @@ class HaloEFT_core(object):
         if not res.success:
             raise RuntimeError(res.message)
 
-        return res.x
+        return {'c0': res.x[0],
+                'c2': res.x[1],
+                'c4': res.x[2],
+                'd1': res.x[3],
+                'd2': res.x[4],
+                'd3': res.x[5]}
 
 
     def __compute_renormalization_fit(self, x, coeffs, blinear, fb):
