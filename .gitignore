@@ -1,0 +1,5 @@
+*.pyc
+/plots
+/output
+/theory
+/data
