@@ -12,18 +12,18 @@ class HaloEFT_core(object):
 
         self.__mod_name = my_name
 
-        self.__nbin = 15
-        self.__nbinc = 25
+        self.nbin = 15
+        self.nbinc = 25
 
-        self.__WiggleZ_mean_ks = np.linspace(0.01, 0.29, self.__nbin)
-        self.__WiggleZ_conv_ks = np.linspace(0.01, 0.49, self.__nbinc)
+        self.WiggleZ_mean_ks = np.linspace(0.01, 0.29, self.nbin)
+        self.WiggleZ_conv_ks = np.linspace(0.01, 0.49, self.nbinc)
 
 
         # READ AND CACHE THEORY DATA PRODUCTS
 
         theory_db = my_config["HaloEFT", "theory_db"]
 
-        self.__theory_payload = {}
+        self.theory_payload = {}
 
         self.__import_theory(['nobias',
                               'b1_1',
@@ -53,18 +53,18 @@ class HaloEFT_core(object):
                               'b1_1_bdG2',
                               'b1_1_bGamma3'], ['c0', 'c2', 'c4', 'c6'], theory_db, my_config)
 
-        mean_all_mask = self.__WiggleZ_mean_ks > 0.01
-        conv_all_mask = np.all([self.__WiggleZ_conv_ks > 0.01, self.__WiggleZ_conv_ks < 0.30], axis=0)
-        self.__mean_all_mask = np.concatenate((mean_all_mask, mean_all_mask, mean_all_mask))
-        self.__conv_all_mask = np.concatenate((conv_all_mask, conv_all_mask, conv_all_mask))
+        mam = self.WiggleZ_mean_ks > 0.01
+        cam = np.all([self.WiggleZ_conv_ks > 0.01, self.WiggleZ_conv_ks < 0.30], axis=0)
+        self.mean_all_mask = np.concatenate((mam, mam, mam))
+        self.conv_all_mask = np.concatenate((cam, cam, cam))
 
         ren_kmin = my_config["HaloEFT", "renormalize_kmin"]
         ren_kmax = my_config["HaloEFT", "renormalize_kmax"]
 
-        mean_ren_mask = np.all([self.__WiggleZ_mean_ks > ren_kmin, self.__WiggleZ_mean_ks < ren_kmax], axis=0)
-        conv_ren_mask = np.all([self.__WiggleZ_conv_ks > ren_kmin, self.__WiggleZ_conv_ks < ren_kmax], axis=0)
-        self.__mean_ren_mask = np.concatenate((mean_ren_mask, mean_ren_mask, mean_ren_mask))
-        self.__conv_ren_mask = np.concatenate((conv_ren_mask, conv_ren_mask, conv_ren_mask))
+        mrm = np.all([self.WiggleZ_mean_ks > ren_kmin, self.WiggleZ_mean_ks < ren_kmax], axis=0)
+        crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks < ren_kmax], axis=0)
+        self.__mean_ren_mask = np.concatenate((mrm, mrm, mrm))
+        self.__conv_ren_mask = np.concatenate((crm, crm, crm))
 
 
         # READ AND CACHE WIGGLEZ DATA PRODUCTS
@@ -87,13 +87,13 @@ class HaloEFT_core(object):
         h22_means = my_config["HaloEFT", "h22_means"]
         h22_cov = my_config["HaloEFT", "h22_matrix"]
 
-        self.__data_raw_means = {}
-        self.__data_all_means = {}
-        self.__data_ren_means = {}
-        self.__data_all_covs = {}
-        self.__data_ren_covs = {}
-        self.__data_convs = {}
-        self.__data_regions = ['1h', '3h', '8h', '11h', '15h', '22h']
+        self.data_raw_means = {}
+        self.data_all_means = {}
+        self.data_ren_means = {}
+        self.data_all_covs = {}
+        self.data_ren_covs = {}
+        self.data_convs = {}
+        self.data_regions = ['1h', '3h', '8h', '11h', '15h', '22h']
 
         self.__import_WiggleZ_data("1h", h1_means, h1_cov, my_config)
         self.__import_WiggleZ_data("3h", h3_means, h3_cov, my_config)
@@ -108,10 +108,10 @@ class HaloEFT_core(object):
         realization = my_config["HaloEFT", "realization"]
 
         # number of bins in P_ell measurements and covariance matrix
-        nbin = self.__nbin
+        nbin = self.nbin
 
         # number of bins in convolution  matrix
-        nbinc = self.__nbinc
+        nbinc = self.nbinc
 
         # read in the WiggleZ data for this region as astropy.table.Table instances
         mean_table = ascii.read(means_file, Reader=ascii.NoHeader,
@@ -135,9 +135,9 @@ class HaloEFT_core(object):
         this_P2 = np.asarray(mean_realization['P2'])
         this_P4 = np.asarray(mean_realization['P4'])
 
-        self.__data_raw_means[tag] = np.concatenate( (this_P0, this_P2, this_P4) )
-        self.__data_all_means[tag] = np.concatenate( (this_P0, this_P2, this_P4) )[self.__mean_all_mask]
-        self.__data_ren_means[tag] = np.concatenate( (this_P0, this_P2, this_P4) )[self.__mean_ren_mask]
+        self.data_raw_means[tag] = np.concatenate((this_P0, this_P2, this_P4))
+        self.data_all_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_all_mask]
+        self.data_ren_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.__mean_ren_mask]
 
         CMat = np.empty((3*nbin, 3*nbin))
         ConvMat = np.empty((3*nbinc, 3*nbinc))
@@ -150,25 +150,25 @@ class HaloEFT_core(object):
 
             ConvMat[row['i']-1, row['j']-1] = row['value']
 
-        CMat_all = (CMat[self.__mean_all_mask, :])[:, self.__mean_all_mask]
+        CMat_all = (CMat[self.mean_all_mask, :])[:, self.mean_all_mask]
 
         w, p = np.linalg.eig(CMat_all)
         if not np.all(w > 0):
             print 'using pseudo-inverse covariance matrix for "all" group in region {tag}'.format(tag=tag)
-            self.__data_all_covs[tag] = np.linalg.pinv(CMat_all)
+            self.data_all_covs[tag] = np.linalg.pinv(CMat_all)
         else:
-            self.__data_all_covs[tag] = np.linalg.inv(CMat_all)
+            self.data_all_covs[tag] = np.linalg.inv(CMat_all)
 
         CMat_ren = (CMat[self.__mean_ren_mask, :])[:, self.__mean_ren_mask]
 
         w, p = np.linalg.eig(CMat_ren)
         if not np.all(w > 0):
             print 'using pseudo-inverse covariance matrix for "ren" group in region {tag}'.format(tag=tag)
-            self.__data_ren_covs[tag] = np.linalg.pinv(CMat_ren)
+            self.data_ren_covs[tag] = np.linalg.pinv(CMat_ren)
         else:
-            self.__data_ren_covs[tag] = np.linalg.inv(CMat_ren)
+            self.data_ren_covs[tag] = np.linalg.inv(CMat_ren)
 
-        self.__data_convs[tag] = ConvMat
+        self.data_convs[tag] = ConvMat
 
 
     def __import_theory(self, tables, counterterms, db, my_config):
@@ -194,17 +194,17 @@ class HaloEFT_core(object):
                 ell2 = self.__import_theory_P_ell(conn, tag, data, 2)
                 ell4 = self.__import_theory_P_ell(conn, tag, data, 4)
 
-                self.__theory_payload[tag] = (ell0, ell2, ell4)
+                self.theory_payload[tag] = (ell0, ell2, ell4)
 
             for tag in counterterms:
 
-                self.__theory_payload[tag] = self.__import_theory_counterterm(conn, tag, data)
+                self.theory_payload[tag] = self.__import_theory_counterterm(conn, tag, data)
 
             # need f to compute mu^6 counterterm
             self.__import_f(conn, data)
 
         # finally, construct stochastic counterterms
-        ks = self.__WiggleZ_conv_ks
+        ks = self.WiggleZ_conv_ks
         ksq = ks*ks
 
         d1_P0 = np.power(ks, 0)
@@ -219,9 +219,9 @@ class HaloEFT_core(object):
         d3_P2 = 2.0*ksq/3.0
         d3_P4 = 0*ks
 
-        self.__theory_payload['d1'] = (d1_P0, d1_P2, d1_P4)
-        self.__theory_payload['d2'] = (d2_P0, d2_P2, d2_P4)
-        self.__theory_payload['d3'] = (d3_P0, d3_P2, d3_P4)
+        self.theory_payload['d1'] = (d1_P0, d1_P2, d1_P4)
+        self.theory_payload['d2'] = (d2_P0, d2_P2, d2_P4)
+        self.theory_payload['d3'] = (d3_P0, d3_P2, d3_P4)
 
 
     def __import_theory_P_ell(self, conn, tag, data, ell):
@@ -377,10 +377,10 @@ class HaloEFT_core(object):
         self.add_counterterms(coeffs, values, blinear)
 
         # build theoretical P_ell with these counterterms
-        P0, P2, P4 = self.__build_theory_P_ell(coeffs)
+        P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
         # sum likelihood over all regions and store
-        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'all') for region in self.__data_regions])
+        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'all') for region in self.data_regions])
         block[likes, 'GLOBAL_LIKE'] = lik
 
         # store derived EFT parameters for output with the rest of the chain
@@ -395,14 +395,14 @@ class HaloEFT_core(object):
         return 0
 
 
-    def __build_theory_P_ell(self, coeffs):
+    def build_theory_P_ell(self, coeffs):
 
         # construct P_ell, including mixing counterterms and stochastic counterterms
-        P0 = np.zeros( (self.__nbinc,) )
-        P2 = np.zeros( (self.__nbinc,) )
-        P4 = np.zeros( (self.__nbinc,) )
+        P0 = np.zeros((self.nbinc,))
+        P2 = np.zeros((self.nbinc,))
+        P4 = np.zeros((self.nbinc,))
 
-        for table, data in self.__theory_payload.iteritems():
+        for table, data in self.theory_payload.iteritems():
 
             P0 = P0 + coeffs[table] * data[0]
             P2 = P2 + coeffs[table] * data[1]
@@ -414,15 +414,15 @@ class HaloEFT_core(object):
     def __compute_likelihood(self, region, P0, P2, P4, type='all'):
 
         if type is 'all':
-            mask = self.__conv_all_mask
-            means = self.__data_all_means[region]
-            cov = self.__data_all_covs[region]
+            mask = self.conv_all_mask
+            means = self.data_all_means[region]
+            cov = self.data_all_covs[region]
         else:
             mask = self.__conv_ren_mask
-            means = self.__data_ren_means[region]
-            cov = self.__data_ren_covs[region]
+            means = self.data_ren_means[region]
+            cov = self.data_ren_covs[region]
 
-        conv = self.__data_convs[region]
+        conv = self.data_convs[region]
 
         # first, convolve theory vector with WiggleZ convolution matrix for this region
         P = np.concatenate( (P0, P2, P4) )
@@ -473,9 +473,9 @@ class HaloEFT_core(object):
                        'd2': d2,
                        'd3': d3})
 
-        P0, P2, P4 = self.__build_theory_P_ell(coeffs)
+        P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
-        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'ren') for region in self.__data_regions])
+        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'ren') for region in self.data_regions])
 
         return -lik
 

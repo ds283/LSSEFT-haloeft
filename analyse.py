@@ -48,7 +48,7 @@ class EFT_tools(heft.HaloEFT_core):
 
     def compute_chisq(self, coeffs):
 
-        P0, P2, P4 = self.__build_theory_P_ell(coeffs)
+        P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
         P = np.concatenate( (P0, P2, P4) )
 
@@ -57,7 +57,7 @@ class EFT_tools(heft.HaloEFT_core):
                   '0.11', '0.13', '0.15', '0.17', '0.19',
                   '0.21', '0.23', '0.25', '0.27', '0.29']
 
-        i_mask = np.array([ False for i in xrange(np.sum(self.__mean_all_mask)/3) ])
+        i_mask = np.array([False for i in xrange(np.sum(self.mean_all_mask) / 3)])
 
         for i in xrange(len(i_mask)):
 
@@ -66,12 +66,12 @@ class EFT_tools(heft.HaloEFT_core):
 
             chisq = 0.0
 
-            for region in self.__data_regions:
+            for region in self.data_regions:
 
-                mask = self.__conv_all_mask
-                means = self.__data_all_means[region]
-                cov = self.__data_all_covs[region]
-                conv = self.__data_convs[region]
+                mask = self.conv_all_mask
+                means = self.data_all_means[region]
+                cov = self.data_all_covs[region]
+                conv = self.data_convs[region]
 
                 Pconv = np.dot(conv, P)
 
@@ -92,17 +92,19 @@ class EFT_tools(heft.HaloEFT_core):
 
     def make_plot(self, plot_file, coeffs):
 
-        P0, P2, P4 = self.__build_theory_P_ell(coeffs)
+        P0, P2, P4 = self.build_theory_P_ell(coeffs)
         P = np.concatenate( (P0, P2, P4) )
 
         with open(plot_file, 'w') as f:
+
+            print 'generating theory + fit file "{f}"'.format(f=plot_file)
 
             labels = ['k', 'P0', 'P2', 'P4',
                       'P0_theory_avg', 'P2_theory_avg', 'P4_theory_avg',
                       'P0_WizCOLA_avg', 'P2_WizCOLA_avg', 'P4_WizCOLA_avg',
                       'P0_Delta_avg', 'P2_Delta_avg', 'P4_Delta_avg']
 
-            for r in self.__data_regions:
+            for r in self.data_regions:
                 labels = labels + [r + '_P0_theory', r + '_P2_theory', r + '_P4_theory',
                                    r + '_P0_WizCOLA', r + '_P2_WizCOLA', r + '_P4_WizCOLA',
                                    r + '_P0_Delta', r + '_P2_Delta', r + '_P4_Delta']
@@ -110,9 +112,9 @@ class EFT_tools(heft.HaloEFT_core):
             writer = csv.DictWriter(f, labels)
             writer.writeheader()
 
-            for i in xrange(len(self.__WiggleZ_mean_ks)):
+            for i in xrange(len(self.WiggleZ_mean_ks)):
 
-                row = {'k': self.__WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
+                row = {'k': self.WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
 
                 P0_theory_tot = 0
                 P2_theory_tot = 0
@@ -126,16 +128,16 @@ class EFT_tools(heft.HaloEFT_core):
                 P2_Delta_tot = 0
                 P4_Delta_tot = 0
 
-                for r in self.__data_regions:
+                for r in self.data_regions:
 
-                    means = self.__data_raw_means[r]
-                    conv = self.__data_convs[r]
+                    means = self.data_raw_means[r]
+                    conv = self.data_convs[r]
 
                     Pconv = np.dot(conv, P)
 
                     row.update({r+'_P0_theory': Pconv[i], r+'_P0_WizCOLA': means[i]})
-                    row.update({r+'_P2_theory': Pconv[1*self.__nbinc+i], r+'_P2_WizCOLA': means[1*self.__nbin+i]})
-                    row.update({r+'_P4_theory': Pconv[2*self.__nbinc+i], r+'_P4_WizCOLA': means[2*self.__nbin+i]})
+                    row.update({r+'_P2_theory': Pconv[1 * self.nbinc + i], r + '_P2_WizCOLA': means[1 * self.nbin + i]})
+                    row.update({r+'_P4_theory': Pconv[2 * self.nbinc + i], r + '_P4_WizCOLA': means[2 * self.nbin + i]})
 
                     row.update({r+'_P0_Delta': row[r+'_P0_theory'] - row[r+'_P0_WizCOLA']})
                     row.update({r+'_P2_Delta': row[r+'_P2_theory'] - row[r+'_P2_WizCOLA']})
@@ -153,7 +155,7 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_Delta_tot += P2_theory_tot - P2_WizCOLA_tot
                     P4_Delta_tot += P4_theory_tot - P4_WizCOLA_tot
 
-                regions = len(self.__data_regions)
+                regions = len(self.data_regions)
 
                 row.update({'P0_theory_avg': P0_theory_tot/regions,
                             'P2_theory_avg': P2_theory_tot/regions,
@@ -173,6 +175,7 @@ class analyse(object):
     def __init__(self, realization, emcee_file, out_file, params, mixing_plot=None, stochastic_plot=None):
 
         self.__realization = realization
+        self.__params = params
         self.__tools = EFT_tools(realization)
 
         emcee_path = path.join('output', emcee_file)
@@ -198,6 +201,8 @@ class analyse(object):
         # generate GetDist .paramnames file if it does not already exist
         if not path.exists(param_names_file):
 
+            print 'generating GetDist .paramnames file "{f}"'.format(f=param_names_file)
+
             with open(param_names_file, 'w') as g:
 
                 writer = csv.DictWriter(g, ['name', 'LaTeX'], delimiter='\t')
@@ -212,9 +217,15 @@ class analyse(object):
                 writer.writerow({'name': r'd2*', 'LaTeX': r'd_2'})
                 writer.writerow({'name': r'd3*', 'LaTeX': r'd_3'})
 
+        else:
+
+            print 'GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=param_names_file)
+
 
         # generate GetDist-compatible chain file from emcee output, if it does not already exist
         if not path.exists(getdist_file):
+
+            print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_file)
 
             table = ascii.read(emcee_path, Reader=ascii.NoHeader, names=input_columns)
 
@@ -238,6 +249,10 @@ class analyse(object):
 
                     writer.writerow(row_dict)
 
+        else:
+
+            print 'GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_file)
+
 
         # import chains files using GetDist and cache its MCSamples object internally
         analysis_settings = {'ignore_rows': 0.4}
@@ -245,11 +260,15 @@ class analyse(object):
 
         if mixing_plot is not None:
 
+            print 'generating triangle plot for mixing counterterms'
+
             g = gdp.getSubplotPlotter()
             g.triangle_plot(self.__samples, mixing_plot, shaded=True)
             g.export(triangle_mixing_file)
 
         if stochastic_plot is not None:
+
+            print 'generating triangle plot for stochastic counterterms'
 
             h = gdp.getSubplotPlotter()
             h.triangle_plot(self.__samples, stochastic_plot, shaded=True)
@@ -272,12 +291,16 @@ class analyse(object):
 
         r = {p: x.parWithName(p).bestfit_sample for p in self.__params}
 
-        return r.update({'c0': x.parWithName('c0').bestfit_sample,
-                         'c2': x.parWithName('c2').bestfit_sample,
-                         'c4': x.parWithName('c4').bestfit_sample,
-                         'd1': x.parWithName('d1').bestfit_sample,
-                         'd2': x.parWithName('d2').bestfit_sample,
-                         'd3': x.parWithName('d3').bestfit_sample})
+        EFT_r = {'c0': x.parWithName('c0').bestfit_sample,
+                 'c2': x.parWithName('c2').bestfit_sample,
+                 'c4': x.parWithName('c4').bestfit_sample,
+                 'd1': x.parWithName('d1').bestfit_sample,
+                 'd2': x.parWithName('d2').bestfit_sample,
+                 'd3': x.parWithName('d3').bestfit_sample}
+
+        r.update(EFT_r)
+
+        return r
 
 
 def write_summary(realizations, make_params, get_blinear, out_file):
@@ -287,9 +310,19 @@ def write_summary(realizations, make_params, get_blinear, out_file):
     summary_file = path.join('plots', out_file + '.txt')
 
     # parameter list from all realizations should be the same
-    params = realizations[0].get_params()
+    params = None
+    for r in realizations:
+        p = realizations[r].get_params()
+
+        if params is not None:
+            if params != p:
+                raise RuntimeError
+        else:
+            params = p
 
     with open(param_file, 'w') as f:
+
+        print 'generating GetDist-format chain summary .paramnames "{f}"'.format(f=param_file)
 
         writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t')
 
@@ -320,6 +353,8 @@ def write_summary(realizations, make_params, get_blinear, out_file):
 
     with open(summary_file, 'w') as f:
 
+        print 'generating GetDist-format chain summary file "{f}"'.format(f=summary_file)
+
         columns = ['weight', 'like'] + list(params.keys()) + \
                   ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'] + \
                   ['0.03', '0.05', '0.07', '0.09', '0.11', '0.13', '0.15', '0.17', '0.19', '0.21', '0.23', '0.25', '0.27', '0.29']
@@ -331,9 +366,9 @@ def write_summary(realizations, make_params, get_blinear, out_file):
             row = realizations[real].get_fit_point()
             tools = realizations[real].get_tools()
 
-            params = make_params(row)
-            coeffs = tools.make_coeffs(params)
-            tools.add_counterterms(coeffs, row, get_blinear(params))
+            param_dict = make_params(row)
+            coeffs = tools.make_coeffs(param_dict)
+            tools.add_counterterms(coeffs, row, get_blinear(row))
 
             deviations = tools.compute_chisq(coeffs)
 
@@ -343,7 +378,7 @@ def write_summary(realizations, make_params, get_blinear, out_file):
             writer.writerow(row)
 
 
-def write_Pell(list, out_file, make_params, get_blinear):
+def write_Pell(list, make_params, get_blinear, out_file):
 
     for real in list:
 
@@ -354,6 +389,6 @@ def write_Pell(list, out_file, make_params, get_blinear):
 
         params = make_params(bestfit)
         coeffs = tools.make_coeffs(params)
-        tools.add_counterterms(coeffs, bestfit, get_blinear(params))
+        tools.add_counterterms(coeffs, bestfit, get_blinear(bestfit))
 
         tools.make_plot(p, coeffs)
