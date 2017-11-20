@@ -1,9 +1,12 @@
 from cosmosis.runtime.declare import declare_module
+from cosmosis.datablock import names as section_names
 import haloeft as heft
 import linear_params as lin
 
 
 class HaloEFT(heft.HaloEFT_core):
+
+    likes = section_names.likelihoods
 
     def __init__(self, my_config, my_name):
 
@@ -18,7 +21,7 @@ class HaloEFT(heft.HaloEFT_core):
 
         params = lin.make_params({'b1': b1})
 
-        return super(HaloEFT, self).compute(block, params, b1)
+        return super(HaloEFT, self).compute(block, params, b1, self.likes)
 
 
     def cleanup(self):

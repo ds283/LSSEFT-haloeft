@@ -1,6 +1,5 @@
 import numpy as np
 
-from cosmosis.datablock import names as section_names
 from astropy.io import ascii
 from scipy import optimize
 
@@ -8,8 +7,6 @@ import sqlite3
 
 
 class HaloEFT_core(object):
-
-    likes = section_names.likelihoods
 
     def __init__(self, my_config, my_name):
 
@@ -369,7 +366,7 @@ class HaloEFT_core(object):
                        'd3': d3})
 
 
-    def compute(self, block, params, blinear):
+    def compute(self, block, params, blinear, likes):
 
         coeffs = self.make_coeffs(params)
 
@@ -384,7 +381,7 @@ class HaloEFT_core(object):
 
         # sum likelihood over all regions and store
         lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'all') for region in self.__data_regions])
-        block[self.likes, 'GLOBAL_LIKE'] = lik
+        block[likes, 'GLOBAL_LIKE'] = lik
 
         # store derived EFT parameters for output with the rest of the chain
         block['counterterms', 'c0'] = values['c0']

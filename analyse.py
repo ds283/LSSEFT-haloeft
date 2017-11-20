@@ -170,14 +170,14 @@ class EFT_tools(heft.HaloEFT_core):
 
 class analyse(object):
 
-    def __init__(self, realization, emcee_file, out_file, params, plot_params=None):
+    def __init__(self, realization, emcee_file, out_file, params, mixing_plot=None, stochastic_plot=None):
 
         self.__realization = realization
         self.__tools = EFT_tools(realization)
 
         emcee_path = path.join('output', emcee_file)
 
-        input_columns = list(params.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd4', 'like']
+        input_columns = list(params.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
 
         mixing_folder = path.join('plots', 'mixing')
         stochastic_folder = path.join('plots', 'stochastic')
@@ -243,14 +243,16 @@ class analyse(object):
         analysis_settings = {'ignore_rows': 0.4}
         self.__samples = mcs.loadMCSamples(getdist_root, settings=analysis_settings)
 
-        if plot_params is not None:
+        if mixing_plot is not None:
 
             g = gdp.getSubplotPlotter()
-            g.triangle_plot(self.__samples, plot_params, shaded=True)
+            g.triangle_plot(self.__samples, mixing_plot, shaded=True)
             g.export(triangle_mixing_file)
 
+        if stochastic_plot is not None:
+
             h = gdp.getSubplotPlotter()
-            h.triangle_plot(self.__samples, plot_params, shaded=True)
+            h.triangle_plot(self.__samples, stochastic_plot, shaded=True)
             h.export(triangle_stochastic_file)
 
 
