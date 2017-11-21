@@ -9,9 +9,9 @@ def make_params(plist):
 
     # the local model involves the combination bs2*s2/2 + 105*b3nl*(st + 8*delta*delta*delta/189)/16
 
-    # now, s2 is defined as G2 + 2*delta*delta/3, so if bG2 is defined with a factor of 1/2 and
+    # now, s2 is defined as G2 + 2*delta*delta/3, so if bG2 is defined without a factor of 1/2 and
     # b2 is defined with a factor of 1/2
-    bG2 = bs2
+    bG2 = bs2 / 2.0
     b2 += 2.0 * bs2 / 3.0
 
     # and st is defined as (the third order part of) Gamma3/2 + delta*delta/3 - theta*theta/3
@@ -27,7 +27,7 @@ def make_params(plist):
     # net factor of bdG2 = (105/16)(-4/21) = -5/4
     bdG2 = -5.0 * b3nl / 4.0
 
-    # b3 is defined with a factor of 1/6, so its net factor if 105 * (8/189) * (6/16) = 5/3
+    # b3 is defined with a factor of 1/6, so its net factor is 105 * (8/189) * (6/16) = 5/3
     b3 = 5.0 * b3nl / 3.0
 
     # build coefficient dictionary
