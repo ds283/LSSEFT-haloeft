@@ -3,6 +3,8 @@ import numpy as np
 from astropy.io import ascii
 from scipy import optimize
 
+import cProfile
+
 import sqlite3
 
 
@@ -11,6 +13,9 @@ class HaloEFT_core(object):
     def __init__(self, my_config, my_name):
 
         self.__mod_name = my_name
+
+        self.profiler = cProfile.Profile()
+        self.profiler.disable()
 
         self.nbin = 15
         self.nbinc = 25
@@ -368,6 +373,8 @@ class HaloEFT_core(object):
 
     def compute(self, block, params, blinear, likes):
 
+        self.profiler.enable()
+
         coeffs = self.make_coeffs(params)
 
         # compute EFT counterterms
@@ -391,6 +398,8 @@ class HaloEFT_core(object):
         block['counterterms', 'd1'] = values['d1']
         block['counterterms', 'd2'] = values['d2']
         block['counterterms', 'd3'] = values['d3']
+
+        self.profiler.disable()
 
         return 0
 
@@ -481,5 +490,8 @@ class HaloEFT_core(object):
 
 
     def cleanup(self):
+
+        self.profiler.create_stats()
+        self.profiler.dump_stats("haloeft.prof")
 
         return 0
