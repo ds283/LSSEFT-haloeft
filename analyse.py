@@ -303,7 +303,7 @@ class analyse(object):
         return r
 
 
-def write_summary(realizations, make_params, get_blinear, out_file):
+def write_summary(realizations, make_params, get_linear_bias, out_file):
 
     # filenames for GetDist chain-like output
     param_file = path.join('plots', out_file + '.paramnames')
@@ -368,7 +368,7 @@ def write_summary(realizations, make_params, get_blinear, out_file):
 
             param_dict = make_params(row)
             coeffs = tools.make_coeffs(param_dict)
-            tools.add_counterterms(coeffs, row, get_blinear(row))
+            tools.add_counterterms(coeffs, row, get_linear_bias(row))
 
             deviations = tools.compute_chisq(coeffs)
 
@@ -378,7 +378,7 @@ def write_summary(realizations, make_params, get_blinear, out_file):
             writer.writerow(row)
 
 
-def write_Pell(list, make_params, get_blinear, out_file):
+def write_Pell(list, make_params, get_linear_bias, out_file):
 
     for real in list:
 
@@ -389,6 +389,6 @@ def write_Pell(list, make_params, get_blinear, out_file):
 
         params = make_params(bestfit)
         coeffs = tools.make_coeffs(params)
-        tools.add_counterterms(coeffs, bestfit, get_blinear(bestfit))
+        tools.add_counterterms(coeffs, bestfit, get_linear_bias(bestfit))
 
         tools.make_plot(p, coeffs)

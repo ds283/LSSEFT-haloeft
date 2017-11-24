@@ -14,5 +14,5 @@ r10 = asy.analyse(10, 'output/output_full_r10.txt', 'plots/full_r10.txt', {'b1_1
 
 list = {'r01': r01, 'r02': r02, 'r03': r03, 'r04': r04, 'r05': r05, 'r06': r06, 'r07': r07, 'r08': r08, 'r09': r09, 'r10': r10}
 
-asy.write_summary(list, fp.make_params, fp.get_blinear, 'full_ensemble')
-asy.write_Pell(list, fp.make_params, fp.get_blinear, 'full_ensemble')
+asy.write_summary(list, fp.make_params, fp.get_linear_bias, 'full_ensemble')
+asy.write_Pell(list, fp.make_params, fp.get_linear_bias, 'full_ensemble')

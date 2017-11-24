@@ -14,5 +14,5 @@ r10 = asy.analyse(10, 'output_linear_r10.txt', 'linear_r10', {'b1': 'b_1'}, ['b1
 
 list = {'r01': r01, 'r02': r02, 'r03': r03, 'r04': r04, 'r05': r05, 'r06': r06, 'r07': r07, 'r08': r08, 'r09': r09, 'r10': r10}
 
-asy.write_summary(list, lin.make_params, lin.get_blinear, 'linear_ensemble')
-asy.write_Pell(list, lin.make_params, lin.get_blinear, 'linear_ensemble')
+asy.write_summary(list, lin.make_params, lin.get_linear_bias, 'linear_ensemble')
+asy.write_Pell(list, lin.make_params, lin.get_linear_bias, 'linear_ensemble')
