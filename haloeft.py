@@ -23,6 +23,9 @@ class HaloEFT_core(object):
         self.WiggleZ_mean_ks = np.linspace(0.01, 0.29, self.nbin)
         self.WiggleZ_conv_ks = np.linspace(0.01, 0.49, self.nbinc)
 
+        self.labels = ['0.01', '0.03', '0.05', '0.07', '0.09',
+                       '0.11', '0.13', '0.15', '0.17', '0.19',
+                       '0.21', '0.23', '0.25', '0.27', '0.29']
 
         # READ AND CACHE THEORY DATA PRODUCTS
 
@@ -58,16 +61,19 @@ class HaloEFT_core(object):
                               'b1_1_bdG2',
                               'b1_1_bGamma3'], ['c0', 'c2', 'c4', 'c6'], theory_db, my_config)
 
-        mam = self.WiggleZ_mean_ks > 0.01
-        cam = np.all([self.WiggleZ_conv_ks > 0.01, self.WiggleZ_conv_ks < 0.30], axis=0)
+        fit_kmin = my_config["HaloEFT", "fit_kmin"]
+        fit_kmax = my_config["HaloEFT", "fit_kmax"]
+
+        mam = np.all([self.WiggleZ_mean_ks > fit_kmin, self.WiggleZ_mean_ks <= fit_kmax], axis=0)
+        cam = np.all([self.WiggleZ_conv_ks > fit_kmin, self.WiggleZ_conv_ks <= fit_kmax], axis=0)
         self.mean_all_mask = np.concatenate((mam, mam, mam))
         self.conv_all_mask = np.concatenate((cam, cam, cam))
 
         ren_kmin = my_config["HaloEFT", "renormalize_kmin"]
         ren_kmax = my_config["HaloEFT", "renormalize_kmax"]
 
-        mrm = np.all([self.WiggleZ_mean_ks > ren_kmin, self.WiggleZ_mean_ks < ren_kmax], axis=0)
-        crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks < ren_kmax], axis=0)
+        mrm = np.all([self.WiggleZ_mean_ks > ren_kmin, self.WiggleZ_mean_ks <= ren_kmax], axis=0)
+        crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks <= ren_kmax], axis=0)
         self.__mean_ren_mask = np.concatenate((mrm, mrm, mrm))
         self.__conv_ren_mask = np.concatenate((crm, crm, crm))
 
