@@ -9,7 +9,7 @@ import haloeft as heft
 
 class EFT_tools(heft.HaloEFT_core):
 
-    def __init__(self, realization):
+    def __init__(self, realization, fit_kmin=0.01, fit_kmax=0.30, ren_kmin=0.01, ren_kmax=0.30):
 
         # use a dictionary to mimic the CosmoSIS datablock API
         config = {}
@@ -38,8 +38,10 @@ class EFT_tools(heft.HaloEFT_core):
         config["HaloEFT", "IR_cutoff"] = 0
         config["HaloEFT", "UV_cutoff"] = 0
         config["HaloEFT", "IR_resum"] = 0
-        config["HaloEFT", "renormalize_kmin"] = 0.02
-        config["HaloEFT", "renormalize_kmax"] = 0.30
+        config["HaloEFT", "fit_kmin"] = fit_kmin
+        config["HaloEFT", "fit_kmax"] = fit_kmax
+        config["HaloEFT", "renormalize_kmin"] = ren_kmin
+        config["HaloEFT", "renormalize_kmax"] = ren_kmax
 
         # pass configuration to base class
         # this arranges for read-in of the WiggleZ data products and contents of the theory database
@@ -53,39 +55,39 @@ class EFT_tools(heft.HaloEFT_core):
         P = np.concatenate( (P0, P2, P4) )
 
         rval = {}
-        labels = ['0.03', '0.05', '0.07', '0.09',
-                  '0.11', '0.13', '0.15', '0.17', '0.19',
-                  '0.21', '0.23', '0.25', '0.27', '0.29']
 
-        i_mask = np.array([False for i in xrange(np.sum(self.mean_all_mask) / 3)])
+        i_mask = np.array([False for i in xrange(len(self.WiggleZ_mean_ks))])
 
         for i in xrange(len(i_mask)):
 
-            i_mask[i] = True
-            i_mask_full = np.concatenate( (i_mask, i_mask, i_mask) )
+            i_mask[i] = self.mean_all_mask[i]
 
-            chisq = 0.0
+            if(i_mask[i]):
 
-            for region in self.data_regions:
+                i_mask_full = np.concatenate( (i_mask, i_mask, i_mask) )
 
-                mask = self.conv_all_mask
-                means = self.data_all_means[region]
-                cov = self.data_all_covs[region]
-                conv = self.data_convs[region]
+                chisq = 0.0
 
-                Pconv = np.dot(conv, P)
+                for region in self.data_regions:
 
-                Ptheory = Pconv[mask]
+                    mask = self.conv_all_mask
+                    means = self.data_all_means[region]
+                    cov = self.data_all_covs[region]
+                    conv = self.data_convs[region]
 
-                Ptheory_cut = Ptheory[i_mask_full]
-                means_cut = means[i_mask_full]
-                cov_cut = cov[i_mask_full,:][:,i_mask_full]
+                    Pconv = np.dot(conv, P)
 
-                Delta_cut = Ptheory_cut - means_cut
+                    Ptheory = Pconv[mask]
 
-                chisq += np.dot(np.dot(Delta_cut, cov_cut), Delta_cut)
+                    Ptheory_cut = Ptheory[i_mask_full]
+                    means_cut = means[i_mask_full]
+                    cov_cut = cov[i_mask_full,:][:,i_mask_full]
 
-            rval[labels[i]] = chisq
+                    Delta_cut = Ptheory_cut - means_cut
+
+                    chisq += np.dot(np.dot(Delta_cut, cov_cut), Delta_cut)
+
+                rval[self.labels[i]] = chisq
 
         return rval
 
