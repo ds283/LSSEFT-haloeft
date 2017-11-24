@@ -66,8 +66,8 @@ class HaloEFT_core(object):
 
         mam = np.all([self.WiggleZ_mean_ks > fit_kmin, self.WiggleZ_mean_ks <= fit_kmax], axis=0)
         cam = np.all([self.WiggleZ_conv_ks > fit_kmin, self.WiggleZ_conv_ks <= fit_kmax], axis=0)
-        self.mean_all_mask = np.concatenate((mam, mam, mam))
-        self.conv_all_mask = np.concatenate((cam, cam, cam))
+        self.mean_fit_mask = np.concatenate((mam, mam, mam))
+        self.conv_fit_mask = np.concatenate((cam, cam, cam))
 
         ren_kmin = my_config["HaloEFT", "renormalize_kmin"]
         ren_kmax = my_config["HaloEFT", "renormalize_kmax"]
@@ -76,6 +76,9 @@ class HaloEFT_core(object):
         crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks <= ren_kmax], axis=0)
         self.__mean_ren_mask = np.concatenate((mrm, mrm, mrm))
         self.__conv_ren_mask = np.concatenate((crm, crm, crm))
+
+        cmm = self.WiggleZ_conv_ks <= 0.30
+        self.conv_to_means_mask = np.concatenate((cmm, cmm, cmm))
 
 
         # READ AND CACHE WIGGLEZ DATA PRODUCTS
@@ -147,7 +150,7 @@ class HaloEFT_core(object):
         this_P4 = np.asarray(mean_realization['P4'])
 
         self.data_raw_means[tag] = np.concatenate((this_P0, this_P2, this_P4))
-        self.data_all_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_all_mask]
+        self.data_all_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_fit_mask]
         self.data_ren_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.__mean_ren_mask]
 
         CMat = np.empty((3*nbin, 3*nbin))
@@ -161,7 +164,7 @@ class HaloEFT_core(object):
 
             ConvMat[row['i']-1, row['j']-1] = row['value']
 
-        CMat_all = (CMat[self.mean_all_mask, :])[:, self.mean_all_mask]
+        CMat_all = (CMat[self.mean_fit_mask, :])[:, self.mean_fit_mask]
 
         w, p = np.linalg.eig(CMat_all)
         if not np.all(w > 0):
@@ -425,7 +428,7 @@ class HaloEFT_core(object):
     def __compute_likelihood(self, region, P0, P2, P4, type='all'):
 
         if type is 'all':
-            mask = self.conv_all_mask
+            mask = self.conv_fit_mask
             means = self.data_all_means[region]
             cov = self.data_all_covs[region]
         else:

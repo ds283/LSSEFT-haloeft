@@ -60,7 +60,7 @@ class EFT_tools(heft.HaloEFT_core):
 
         for i in xrange(len(i_mask)):
 
-            i_mask[i] = self.mean_all_mask[i]
+            i_mask[i] = self.mean_fit_mask[i]
 
             if(i_mask[i]):
 
@@ -70,7 +70,7 @@ class EFT_tools(heft.HaloEFT_core):
 
                 for region in self.data_regions:
 
-                    mask = self.conv_all_mask
+                    mask = self.conv_to_means_mask
                     means = self.data_all_means[region]
                     cov = self.data_all_covs[region]
                     conv = self.data_convs[region]
