@@ -9,6 +9,6 @@ def make_params(plist):
     return params
 
 
-def get_blinear(plist):
+def get_linear_bias(plist):
 
     return plist['b1']
