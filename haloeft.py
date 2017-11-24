@@ -194,7 +194,7 @@ class HaloEFT_core(object):
                 ell2 = self.__import_theory_P_ell(conn, tag, data, 2)
                 ell4 = self.__import_theory_P_ell(conn, tag, data, 4)
 
-                self.theory_payload[tag] = (ell0, ell2, ell4)
+                self.theory_payload[tag] = np.array([ell0, ell2, ell4])
 
             for tag in counterterms:
 
@@ -219,9 +219,9 @@ class HaloEFT_core(object):
         d3_P2 = 2.0*ksq/3.0
         d3_P4 = 0*ks
 
-        self.theory_payload['d1'] = (d1_P0, d1_P2, d1_P4)
-        self.theory_payload['d2'] = (d2_P0, d2_P2, d2_P4)
-        self.theory_payload['d3'] = (d3_P0, d3_P2, d3_P4)
+        self.theory_payload['d1'] = np.array([d1_P0, d1_P2, d1_P4])
+        self.theory_payload['d2'] = np.array([d2_P0, d2_P2, d2_P4])
+        self.theory_payload['d3'] = np.array([d3_P0, d3_P2, d3_P4])
 
 
     def __import_theory_P_ell(self, conn, tag, data, ell):
@@ -277,7 +277,7 @@ class HaloEFT_core(object):
             P2s.append(P2)
             P4s.append(P4)
 
-        return np.asarray(P0s), np.asarray(P2s), np.asarray(P4s)
+        return np.array([ np.asarray(P0s), np.asarray(P2s), np.asarray(P4s) ])
 
 
     def __import_f(self, conn, data):
@@ -398,17 +398,13 @@ class HaloEFT_core(object):
     def build_theory_P_ell(self, coeffs):
 
         # construct P_ell, including mixing counterterms and stochastic counterterms
-        P0 = np.zeros((self.nbinc,))
-        P2 = np.zeros((self.nbinc,))
-        P4 = np.zeros((self.nbinc,))
+        zip = [ coeffs[key] * data for key, data in self.theory_payload.iteritems() ]
 
-        for table, data in self.theory_payload.iteritems():
+        P = zip[0].copy()
+        for a in zip[1:]:
+            P += a
 
-            P0 = P0 + coeffs[table] * data[0]
-            P2 = P2 + coeffs[table] * data[1]
-            P4 = P4 + coeffs[table] * data[2]
-
-        return P0, P2, P4
+        return P[0], P[1], P[2]
 
 
     def __compute_likelihood(self, region, P0, P2, P4, type='all'):
