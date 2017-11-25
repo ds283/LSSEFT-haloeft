@@ -1,5 +1,5 @@
 import analyse as asy
-import linear_params as lin
+from models.linear import linear_params as lin
 
 r01 = asy.analyse(1, 'output_linear_r01.txt', 'linear_r01', {'b1': 'b_1'}, ['b1', 'c0', 'c2', 'c4'], ['b1', 'd1', 'd2', 'd3'])
 r02 = asy.analyse(2, 'output_linear_r02.txt', 'linear_r02', {'b1': 'b_1'}, ['b1', 'c0', 'c2', 'c4'], ['b1', 'd1', 'd2', 'd3'])

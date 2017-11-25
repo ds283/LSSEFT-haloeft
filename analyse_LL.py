@@ -1,5 +1,5 @@
 import analyse as asy
-import LL_params as LL
+from models.coevolution import coevo_params as LL
 
 r01 = asy.analyse(1, 'output_LL_r01.txt', 'LL_r01', {'b1': 'b_1', 'b2': 'b_2'}, ['b1', 'b2', 'c0', 'c2', 'c4'], ['b1', 'b2', 'd1', 'd2', 'd3'])
 r02 = asy.analyse(2, 'output_LL_r02.txt', 'LL_r02', {'b1': 'b_1', 'b2': 'b_2'}, ['b1', 'b2', 'c0', 'c2', 'c4'], ['b1', 'b2', 'd1', 'd2', 'd3'])

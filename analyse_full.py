@@ -1,5 +1,5 @@
 import analyse as asy
-import full_params as fp
+from models.full import full_params as fp
 
 r01 = asy.analyse(1, 'output/output_full_r01.txt', 'plots/full_r01.txt', {'b1_1': 'b_1^{(1)}', 'b1_2': 'b_1^{(2)}', 'b1_3': 'b_1^{(3)}', 'b2_2': 'b_2^{(2)}', 'bG2_2': 'b_{G_2}^{(2)}', 'bG2_3': 'b_{G_2}^{(3)}'})
 r02 = asy.analyse(2, 'output/output_full_r02.txt', 'plots/full_r02.txt', {'b1_1': 'b_1^{(1)}', 'b1_2': 'b_1^{(2)}', 'b1_3': 'b_1^{(3)}', 'b2_2': 'b_2^{(2)}', 'bG2_2': 'b_{G_2}^{(2)}', 'bG2_3': 'b_{G_2}^{(3)}'})
