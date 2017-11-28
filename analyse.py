@@ -14,20 +14,20 @@ class EFT_tools(heft.HaloEFT_core):
         # use a dictionary to mimic the CosmoSIS datablock API
         config = {}
 
-        config["HaloEFT", "h1_means"] = "data/means/pkpole_wizcola_1hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h3_means"] = "data/means/pkpole_wizcola_3hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h9_means"] = "data/means/pkpole_wizcola_9hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h11_means"] = "data/means/pkpole_wizcola_11hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h15_means"] = "data/means/pkpole_wizcola_15hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h22_means"] = "data/means/pkpole_wizcola_22hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h1_matrix"] = "data/covariances/covar_1hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h3_matrix"] = "data/covariances/covar_3hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h9_matrix"] = "data/covariances/covar_9hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h11_matrix"] = "data/covariances/covar_11hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h15_matrix"] = "data/covariances/covar_15hr_z0pt2_0pt6.dat"
-        config["HaloEFT", "h22_matrix"] = "data/covariances/covar_22hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h1_means"] = "../../data/means/pkpole_wizcola_1hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h3_means"] = "../../data/means/pkpole_wizcola_3hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h9_means"] = "../../data/means/pkpole_wizcola_9hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h11_means"] = "../../data/means/pkpole_wizcola_11hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h15_means"] = "../../data/means/pkpole_wizcola_15hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h22_means"] = "../../data/means/pkpole_wizcola_22hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h1_matrix"] = "../../data/covariances/covar_1hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h3_matrix"] = "../../data/covariances/covar_3hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h9_matrix"] = "../../data/covariances/covar_9hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h11_matrix"] = "../../data/covariances/covar_11hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h15_matrix"] = "../../data/covariances/covar_15hr_z0pt2_0pt6.dat"
+        config["HaloEFT", "h22_matrix"] = "../../data/covariances/covar_22hr_z0pt2_0pt6.dat"
         config["HaloEFT", "realization"] = realization
-        config["HaloEFT", "theory_db"] = "theory/WizCOLA_CAMB_halo_full@z=0_kWiggleZ.sqlite"
+        config["HaloEFT", "theory_db"] = "../../theory/WizCOLA_CAMB_halo_full@z=0_kWiggleZ.sqlite"
         config["HaloEFT", "model"] = 0
         config["HaloEFT", "growth_params"] = 0
         config["HaloEFT", "loop_params"] = 0
@@ -80,8 +80,10 @@ class EFT_tools(heft.HaloEFT_core):
                     Ptheory = Pconv[mask]
 
                     Ptheory_cut = Ptheory[i_mask_full]
-                    means_cut = means[i_mask_full]
-                    cov_cut = cov[i_mask_full,:][:,i_mask_full]
+
+                    i_mask_means = i_mask_full[self.mean_fit_mask]
+                    means_cut = means[i_mask_means]
+                    cov_cut = cov[i_mask_means,:][:,i_mask_means]
 
                     Delta_cut = Ptheory_cut - means_cut
 
@@ -172,45 +174,66 @@ class EFT_tools(heft.HaloEFT_core):
                 writer.writerow(row)
 
 
-class analyse(object):
+class analyse_core(object):
 
-    def __init__(self, realization, emcee_file, out_file, params, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, r, p):
 
-        self.__realization = realization
-        self.__params = params
-        self.__tools = EFT_tools(realization)
+        self.realization = r
+        self.params = p
 
-        emcee_path = path.join('output', emcee_file)
+        self.tools = EFT_tools(r)
 
-        input_columns = list(params.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
 
+    def get_params(self):
+
+        return self.params
+
+
+    def get_tools(self):
+
+        return self.tools
+
+
+class analyse_emcee(analyse_core):
+
+    def __init__(self, r, p, emcee_file, out_file, mixing_plot=None, stochastic_plot=None):
+
+        super(analyse_emcee, self).__init__(r, p)
+
+        # construct hierarchy of plot folders
         mixing_folder = path.join('plots', 'mixing')
         stochastic_folder = path.join('plots', 'stochastic')
 
+        # generate folder hierarchy if it does not already exist
         if not path.exists(mixing_folder):
             makedirs(mixing_folder)
 
         if not path.exists(stochastic_folder):
             makedirs(stochastic_folder)
 
-        param_names_file = path.join('plots', out_file + '.paramnames')
+        # generate paths for GetDist-format output files
         getdist_root = path.join('plots', out_file)
-        getdist_file = path.join('plots', out_file + '.txt')
+        getdist_param_file = path.join('plots', out_file + '.paramnames')
+        getdist_chain_file = path.join('plots', out_file + '.txt')
+
+        # generate paths for output plots
         triangle_mixing_file = path.join(mixing_folder, out_file + '.png')
         triangle_stochastic_file = path.join(stochastic_folder, out_file + '.png')
 
 
+        # CONVERT EMCEE FILES TO GETDIST FORMAT
+
         # generate GetDist .paramnames file if it does not already exist
-        if not path.exists(param_names_file):
+        if not path.exists(getdist_param_file):
 
-            print 'generating GetDist .paramnames file "{f}"'.format(f=param_names_file)
+            print 'generating GetDist .paramnames file "{f}"'.format(f=getdist_param_file)
 
-            with open(param_names_file, 'w') as g:
+            with open(getdist_param_file, 'w') as g:
 
                 writer = csv.DictWriter(g, ['name', 'LaTeX'], delimiter='\t')
 
-                for p in params:
-                    writer.writerow({'name': p, 'LaTeX': params[p]})
+                for par in p:
+                    writer.writerow({'name': par, 'LaTeX': p[par]})
 
                 writer.writerow({'name': r'c0*', 'LaTeX': r'c_0'})
                 writer.writerow({'name': r'c2*', 'LaTeX': r'c_2'})
@@ -221,17 +244,21 @@ class analyse(object):
 
         else:
 
-            print 'GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=param_names_file)
+            print 'GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=getdist_param_file)
 
 
         # generate GetDist-compatible chain file from emcee output, if it does not already exist
-        if not path.exists(getdist_file):
+        emcee_path = path.join('output', emcee_file)
 
-            print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_file)
+        if not path.exists(getdist_chain_file):
+
+            print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
+
+            input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
 
             table = ascii.read(emcee_path, Reader=ascii.NoHeader, names=input_columns)
 
-            with open(getdist_file, 'w') as g:
+            with open(getdist_chain_file, 'w') as g:
 
                 writer = csv.DictWriter(g, ['weight', 'like', 'b1', 'b2', 'c0', 'c2', 'c4', 'd1', 'd2', 'd3'], delimiter='\t')
 
@@ -246,15 +273,17 @@ class analyse(object):
                                 'd2': row['d2'],
                                 'd3': row['d3']}
 
-                    for p in params:
-                        row_dict.update({p: row[p]})
+                    for par in p:
+                        row_dict.update({par: row[par]})
 
                     writer.writerow(row_dict)
 
         else:
 
-            print 'GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_file)
+            print 'GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_chain_file)
 
+
+        # IMPORT CONVERTED CHAIN FILES USING GETDIST
 
         # import chains files using GetDist and cache its MCSamples object internally
         analysis_settings = {'ignore_rows': 0.4}
@@ -277,21 +306,11 @@ class analyse(object):
             h.export(triangle_stochastic_file)
 
 
-    def get_params(self):
-
-        return self.__params
-
-
-    def get_tools(self):
-
-        return self.__tools
-
-
     def get_fit_point(self):
 
         x = self.__samples.getLikeStats()
 
-        r = {p: x.parWithName(p).bestfit_sample for p in self.__params}
+        r = {p: x.parWithName(p).bestfit_sample for p in self.params}
 
         EFT_r = {'c0': x.parWithName('c0').bestfit_sample,
                  'c2': x.parWithName('c2').bestfit_sample,
@@ -305,11 +324,46 @@ class analyse(object):
         return r
 
 
+class analyse_maxlike(analyse_core):
+
+    def __init__(self, r, p, maxlike_file):
+
+        super(analyse_maxlike, self).__init__(r, p)
+
+        # construct hierarchy of plot folders
+        plot_folder = path.join('plots')
+
+        if not path.exists(plot_folder):
+            makedirs(plot_folder)
+
+
+        # READ OUTPUT FILE GENERATED BY MAXLIKE
+
+        # this will consist of a single line giving the best-fit values of all parameters, including derived ones
+        maxlike_path = path.join('output', maxlike_file)
+
+        input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
+
+        table = ascii.read(maxlike_path, Reader=ascii.NoHeader, names=input_columns)
+
+        row = table[0]
+
+        r = {p: row[p] for p in list(p.keys() + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'])}
+
+        self.bestfit = r
+
+
+    def get_fit_point(self):
+
+        return self.bestfit
+
+
+
 def write_summary(realizations, make_params, get_linear_bias, out_file):
 
     # filenames for GetDist chain-like output
-    param_file = path.join('plots', out_file + '.paramnames')
-    summary_file = path.join('plots', out_file + '.txt')
+    getdist_param_file = path.join('plots', out_file + '.paramnames')
+    getdist_chain_file = path.join('plots', out_file + '.txt')
 
     # parameter list from all realizations should be the same
     params = None
@@ -322,9 +376,9 @@ def write_summary(realizations, make_params, get_linear_bias, out_file):
         else:
             params = p
 
-    with open(param_file, 'w') as f:
+    with open(getdist_param_file, 'w') as f:
 
-        print 'generating GetDist-format chain summary .paramnames "{f}"'.format(f=param_file)
+        print 'generating GetDist-format chain summary .paramnames "{f}"'.format(f=getdist_param_file)
 
         writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t')
 
@@ -353,9 +407,9 @@ def write_summary(realizations, make_params, get_linear_bias, out_file):
         writer.writerow({'name': r'chisq027*', 'LaTeX': r'\chi^2_{0.27}'})
         writer.writerow({'name': r'chisq029*', 'LaTeX': r'\chi^2_{0.29}'})
 
-    with open(summary_file, 'w') as f:
+    with open(getdist_chain_file, 'w') as f:
 
-        print 'generating GetDist-format chain summary file "{f}"'.format(f=summary_file)
+        print 'generating GetDist-format chain summary file "{f}"'.format(f=getdist_chain_file)
 
         columns = ['weight', 'like'] + list(params.keys()) + \
                   ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'] + \
