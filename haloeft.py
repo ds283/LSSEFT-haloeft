@@ -18,6 +18,9 @@ class HaloEFT_core(object):
         self.WiggleZ_mean_ks = np.linspace(0.01, 0.29, self.nbin)
         self.WiggleZ_conv_ks = np.linspace(0.01, 0.49, self.nbinc)
 
+        self.labels = ['0.01', '0.03', '0.05', '0.07', '0.09',
+                       '0.11', '0.13', '0.15', '0.17', '0.19',
+                       '0.21', '0.23', '0.25', '0.27', '0.29']
 
         # READ AND CACHE THEORY DATA PRODUCTS
 
@@ -53,18 +56,24 @@ class HaloEFT_core(object):
                               'b1_1_bdG2',
                               'b1_1_bGamma3'], ['c0', 'c2', 'c4', 'c6'], theory_db, my_config)
 
-        mam = self.WiggleZ_mean_ks > 0.01
-        cam = np.all([self.WiggleZ_conv_ks > 0.01, self.WiggleZ_conv_ks < 0.30], axis=0)
-        self.mean_all_mask = np.concatenate((mam, mam, mam))
-        self.conv_all_mask = np.concatenate((cam, cam, cam))
+        fit_kmin = my_config["HaloEFT", "fit_kmin"]
+        fit_kmax = my_config["HaloEFT", "fit_kmax"]
+
+        mam = np.all([self.WiggleZ_mean_ks > fit_kmin, self.WiggleZ_mean_ks <= fit_kmax], axis=0)
+        cam = np.all([self.WiggleZ_conv_ks > fit_kmin, self.WiggleZ_conv_ks <= fit_kmax], axis=0)
+        self.mean_fit_mask = np.concatenate((mam, mam, mam))
+        self.conv_fit_mask = np.concatenate((cam, cam, cam))
 
         ren_kmin = my_config["HaloEFT", "renormalize_kmin"]
         ren_kmax = my_config["HaloEFT", "renormalize_kmax"]
 
-        mrm = np.all([self.WiggleZ_mean_ks > ren_kmin, self.WiggleZ_mean_ks < ren_kmax], axis=0)
-        crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks < ren_kmax], axis=0)
+        mrm = np.all([self.WiggleZ_mean_ks > ren_kmin, self.WiggleZ_mean_ks <= ren_kmax], axis=0)
+        crm = np.all([self.WiggleZ_conv_ks > ren_kmin, self.WiggleZ_conv_ks <= ren_kmax], axis=0)
         self.__mean_ren_mask = np.concatenate((mrm, mrm, mrm))
         self.__conv_ren_mask = np.concatenate((crm, crm, crm))
+
+        cmm = self.WiggleZ_conv_ks <= 0.30
+        self.conv_to_means_mask = np.concatenate((cmm, cmm, cmm))
 
 
         # READ AND CACHE WIGGLEZ DATA PRODUCTS
@@ -88,9 +97,9 @@ class HaloEFT_core(object):
         h22_cov = my_config["HaloEFT", "h22_matrix"]
 
         self.data_raw_means = {}
-        self.data_all_means = {}
+        self.data_fit_means = {}
         self.data_ren_means = {}
-        self.data_all_covs = {}
+        self.data_fit_covs = {}
         self.data_ren_covs = {}
         self.data_convs = {}
         self.data_regions = ['1h', '3h', '8h', '11h', '15h', '22h']
@@ -136,7 +145,7 @@ class HaloEFT_core(object):
         this_P4 = np.asarray(mean_realization['P4'])
 
         self.data_raw_means[tag] = np.concatenate((this_P0, this_P2, this_P4))
-        self.data_all_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_all_mask]
+        self.data_fit_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_fit_mask]
         self.data_ren_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.__mean_ren_mask]
 
         CMat = np.empty((3*nbin, 3*nbin))
@@ -150,14 +159,14 @@ class HaloEFT_core(object):
 
             ConvMat[row['i']-1, row['j']-1] = row['value']
 
-        CMat_all = (CMat[self.mean_all_mask, :])[:, self.mean_all_mask]
+        CMat_all = (CMat[self.mean_fit_mask, :])[:, self.mean_fit_mask]
 
         w, p = np.linalg.eig(CMat_all)
         if not np.all(w > 0):
             print 'using pseudo-inverse covariance matrix for "all" group in region {tag}'.format(tag=tag)
-            self.data_all_covs[tag] = np.linalg.pinv(CMat_all)
+            self.data_fit_covs[tag] = np.linalg.pinv(CMat_all)
         else:
-            self.data_all_covs[tag] = np.linalg.inv(CMat_all)
+            self.data_fit_covs[tag] = np.linalg.inv(CMat_all)
 
         CMat_ren = (CMat[self.__mean_ren_mask, :])[:, self.__mean_ren_mask]
 
@@ -194,7 +203,7 @@ class HaloEFT_core(object):
                 ell2 = self.__import_theory_P_ell(conn, tag, data, 2)
                 ell4 = self.__import_theory_P_ell(conn, tag, data, 4)
 
-                self.theory_payload[tag] = (ell0, ell2, ell4)
+                self.theory_payload[tag] = np.array([ell0, ell2, ell4])
 
             for tag in counterterms:
 
@@ -219,9 +228,9 @@ class HaloEFT_core(object):
         d3_P2 = 2.0*ksq/3.0
         d3_P4 = 0*ks
 
-        self.theory_payload['d1'] = (d1_P0, d1_P2, d1_P4)
-        self.theory_payload['d2'] = (d2_P0, d2_P2, d2_P4)
-        self.theory_payload['d3'] = (d3_P0, d3_P2, d3_P4)
+        self.theory_payload['d1'] = np.array([d1_P0, d1_P2, d1_P4])
+        self.theory_payload['d2'] = np.array([d2_P0, d2_P2, d2_P4])
+        self.theory_payload['d3'] = np.array([d3_P0, d3_P2, d3_P4])
 
 
     def __import_theory_P_ell(self, conn, tag, data, ell):
@@ -277,7 +286,7 @@ class HaloEFT_core(object):
             P2s.append(P2)
             P4s.append(P4)
 
-        return np.asarray(P0s), np.asarray(P2s), np.asarray(P4s)
+        return np.array([ np.asarray(P0s), np.asarray(P2s), np.asarray(P4s) ])
 
 
     def __import_f(self, conn, data):
@@ -398,25 +407,24 @@ class HaloEFT_core(object):
     def build_theory_P_ell(self, coeffs):
 
         # construct P_ell, including mixing counterterms and stochastic counterterms
-        P0 = np.zeros((self.nbinc,))
-        P2 = np.zeros((self.nbinc,))
-        P4 = np.zeros((self.nbinc,))
 
-        for table, data in self.theory_payload.iteritems():
+        # this implementation is a bit cryptic but has been tuned for speed -- this is the rate-limiting
+        # step in an MCMC analysis
+        zip = [ coeffs[key] * data for key, data in self.theory_payload.iteritems() ]
 
-            P0 = P0 + coeffs[table] * data[0]
-            P2 = P2 + coeffs[table] * data[1]
-            P4 = P4 + coeffs[table] * data[2]
+        P = zip[0].copy()
+        for a in zip[1:]:
+            P += a              # in-place addition is fastest
 
-        return P0, P2, P4
+        return P[0], P[1], P[2]
 
 
     def __compute_likelihood(self, region, P0, P2, P4, type='all'):
 
         if type is 'all':
-            mask = self.conv_all_mask
-            means = self.data_all_means[region]
-            cov = self.data_all_covs[region]
+            mask = self.conv_fit_mask
+            means = self.data_fit_means[region]
+            cov = self.data_fit_covs[region]
         else:
             mask = self.__conv_ren_mask
             means = self.data_ren_means[region]
