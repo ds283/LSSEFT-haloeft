@@ -71,8 +71,8 @@ class EFT_tools(heft.HaloEFT_core):
                 for region in self.data_regions:
 
                     mask = self.conv_to_means_mask
-                    means = self.data_all_means[region]
-                    cov = self.data_all_covs[region]
+                    means = self.data_fit_means[region]
+                    cov = self.data_fit_covs[region]
                     conv = self.data_convs[region]
 
                     Pconv = np.dot(conv, P)
@@ -116,10 +116,12 @@ class EFT_tools(heft.HaloEFT_core):
             writer = csv.DictWriter(f, labels)
             writer.writeheader()
 
+            # loop over each k sample point to be included in the analysis
             for i in xrange(len(self.WiggleZ_mean_ks)):
 
                 row = {'k': self.WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
 
+                # initialize accumulators used to sum over all regions
                 P0_theory_tot = 0
                 P2_theory_tot = 0
                 P4_theory_tot = 0
@@ -132,6 +134,7 @@ class EFT_tools(heft.HaloEFT_core):
                 P2_Delta_tot = 0
                 P4_Delta_tot = 0
 
+                # loop over regions
                 for r in self.data_regions:
 
                     means = self.data_raw_means[r]
@@ -139,25 +142,37 @@ class EFT_tools(heft.HaloEFT_core):
 
                     Pconv = np.dot(conv, P)
 
-                    row.update({r+'_P0_theory': Pconv[i], r+'_P0_WizCOLA': means[i]})
-                    row.update({r+'_P2_theory': Pconv[1 * self.nbinc + i], r + '_P2_WizCOLA': means[1 * self.nbin + i]})
-                    row.update({r+'_P4_theory': Pconv[2 * self.nbinc + i], r + '_P4_WizCOLA': means[2 * self.nbin + i]})
+                    P0_theory = Pconv[0 * self.nbinc + i]
+                    P2_theory = Pconv[1 * self.nbinc + i]
+                    P4_theory = Pconv[2 * self.nbinc + i]
 
-                    row.update({r+'_P0_Delta': row[r+'_P0_theory'] - row[r+'_P0_WizCOLA']})
-                    row.update({r+'_P2_Delta': row[r+'_P2_theory'] - row[r+'_P2_WizCOLA']})
-                    row.update({r+'_P4_Delta': row[r+'_P4_theory'] - row[r+'_P4_WizCOLA']})
+                    P0_data = means[0 * self.nbin + i]
+                    P2_data = means[1 * self.nbin + i]
+                    P4_data = means[2 * self.nbin + i]
 
-                    P0_theory_tot += row[r+'_P0_theory']
-                    P2_theory_tot += row[r+'_P2_theory']
-                    P4_theory_tot += row[r+'_P4_theory']
+                    row.update({r+'_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data})
+                    row.update({r+'_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data})
+                    row.update({r+'_P4_theory': P4_theory, r + '_P4_WizCOLA': P4_data})
 
-                    P0_WizCOLA_tot += row[r+'_P0_WizCOLA']
-                    P2_WizCOLA_tot += row[r+'_P2_WizCOLA']
-                    P4_WizCOLA_tot += row[r+'_P4_WizCOLA']
+                    P0_delta = P0_data - P0_theory
+                    P2_delta = P2_data - P2_theory
+                    P4_delta = P4_data - P4_theory
 
-                    P0_Delta_tot += P0_theory_tot - P0_WizCOLA_tot
-                    P2_Delta_tot += P2_theory_tot - P2_WizCOLA_tot
-                    P4_Delta_tot += P4_theory_tot - P4_WizCOLA_tot
+                    row.update({r+'_P0_Delta': P0_delta})
+                    row.update({r+'_P2_Delta': P2_delta})
+                    row.update({r+'_P4_Delta': P4_delta})
+
+                    P0_theory_tot += P0_theory
+                    P2_theory_tot += P2_theory
+                    P4_theory_tot += P4_theory
+
+                    P0_WizCOLA_tot += P0_data
+                    P2_WizCOLA_tot += P2_data
+                    P4_WizCOLA_tot += P4_data
+
+                    P0_Delta_tot += P0_delta
+                    P2_Delta_tot += P2_delta
+                    P4_Delta_tot += P4_delta
 
                 regions = len(self.data_regions)
 

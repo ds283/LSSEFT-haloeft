@@ -97,9 +97,9 @@ class HaloEFT_core(object):
         h22_cov = my_config["HaloEFT", "h22_matrix"]
 
         self.data_raw_means = {}
-        self.data_all_means = {}
+        self.data_fit_means = {}
         self.data_ren_means = {}
-        self.data_all_covs = {}
+        self.data_fit_covs = {}
         self.data_ren_covs = {}
         self.data_convs = {}
         self.data_regions = ['1h', '3h', '8h', '11h', '15h', '22h']
@@ -145,7 +145,7 @@ class HaloEFT_core(object):
         this_P4 = np.asarray(mean_realization['P4'])
 
         self.data_raw_means[tag] = np.concatenate((this_P0, this_P2, this_P4))
-        self.data_all_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_fit_mask]
+        self.data_fit_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_fit_mask]
         self.data_ren_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.__mean_ren_mask]
 
         CMat = np.empty((3*nbin, 3*nbin))
@@ -164,9 +164,9 @@ class HaloEFT_core(object):
         w, p = np.linalg.eig(CMat_all)
         if not np.all(w > 0):
             print 'using pseudo-inverse covariance matrix for "all" group in region {tag}'.format(tag=tag)
-            self.data_all_covs[tag] = np.linalg.pinv(CMat_all)
+            self.data_fit_covs[tag] = np.linalg.pinv(CMat_all)
         else:
-            self.data_all_covs[tag] = np.linalg.inv(CMat_all)
+            self.data_fit_covs[tag] = np.linalg.inv(CMat_all)
 
         CMat_ren = (CMat[self.__mean_ren_mask, :])[:, self.__mean_ren_mask]
 
@@ -407,11 +407,14 @@ class HaloEFT_core(object):
     def build_theory_P_ell(self, coeffs):
 
         # construct P_ell, including mixing counterterms and stochastic counterterms
+
+        # this implementation is a bit cryptic but has been tuned for speed -- this is the rate-limiting
+        # step in an MCMC analysis
         zip = [ coeffs[key] * data for key, data in self.theory_payload.iteritems() ]
 
         P = zip[0].copy()
         for a in zip[1:]:
-            P += a
+            P += a              # in-place addition is fastest
 
         return P[0], P[1], P[2]
 
@@ -420,8 +423,8 @@ class HaloEFT_core(object):
 
         if type is 'all':
             mask = self.conv_fit_mask
-            means = self.data_all_means[region]
-            cov = self.data_all_covs[region]
+            means = self.data_fit_means[region]
+            cov = self.data_fit_covs[region]
         else:
             mask = self.__conv_ren_mask
             means = self.data_ren_means[region]
