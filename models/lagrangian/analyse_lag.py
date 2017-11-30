@@ -1,4 +1,5 @@
 import analyse as asy
+from collections import OrderedDict
 import lag_params as lag
 
 r01 = asy.analyse_emcee(1, {'b1': 'b_1', 'b2': 'b_2', 'bs2': 'b_{s^2}', 'b3nl': r'b_{3\text{nl}}'},
@@ -32,7 +33,9 @@ r10 = asy.analyse_emcee(10, {'b1': 'b_1', 'b2': 'b_2', 'bs2': 'b_{s^2}', 'b3nl':
                         'output_lag_r10.txt', 'lag_r10', ['b1', 'b2', 'bs2', 'b3nl', 'c0', 'c2', 'c4'],
                         ['b1', 'b2', 'bs2', 'b3nl', 'd1', 'd2', 'd3'])
 
-list = {'r01': r01, 'r02': r02, 'r03': r03, 'r04': r04, 'r05': r05, 'r06': r06, 'r07': r07, 'r08': r08, 'r09': r09, 'r10': r10}
+list = OrderedDict(
+    [('r01', r01), ('r02', r02), ('r03', r03), ('r04', r04), ('r05', r05), ('r06', r06), ('r07', r07), ('r08', r08),
+     ('r09', r09), ('r10', r10)])
 
 asy.write_summary(list, lag.make_params, lag.get_linear_bias, 'lag_ensemble')
 asy.write_Pell(list, lag.make_params, lag.get_linear_bias, 'lag_ensemble')

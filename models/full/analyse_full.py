@@ -1,4 +1,5 @@
 import analyse as asy
+from collections import OrderedDict
 import full_params as fp
 
 r01 = asy.analyse_emcee(1, {'b1_1': 'b_1^{(1)}', 'b1_2': 'b_1^{(2)}', 'b1_3': 'b_1^{(3)}', 'b2_2': 'b_2^{(2)}',
@@ -32,7 +33,9 @@ r10 = asy.analyse_emcee(10, {'b1_1': 'b_1^{(1)}', 'b1_2': 'b_1^{(2)}', 'b1_3': '
                              'bG2_2': 'b_{G_2}^{(2)}', 'bG2_3': 'b_{G_2}^{(3)}'}, 'output/output_full_r10.txt',
                         'plots/full_r10.txt')
 
-list = {'r01': r01, 'r02': r02, 'r03': r03, 'r04': r04, 'r05': r05, 'r06': r06, 'r07': r07, 'r08': r08, 'r09': r09, 'r10': r10}
+list = OrderedDict(
+    [('r01', r01), ('r02', r02), ('r03', r03), ('r04', r04), ('r05', r05), ('r06', r06), ('r07', r07), ('r08', r08),
+     ('r09', r09), ('r10', r10)])
 
 asy.write_summary(list, fp.make_params, fp.get_linear_bias, 'full_ensemble')
 asy.write_Pell(list, fp.make_params, fp.get_linear_bias, 'full_ensemble')
