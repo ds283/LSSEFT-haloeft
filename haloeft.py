@@ -453,7 +453,7 @@ class HaloEFT_core(object):
         # coeffs is updated with the values of the counterterms
         initial_counterterms = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         res = optimize.minimize(self.__compute_renormalization_fit, initial_counterterms, method='Powell',
-                                args=(coeffs, blinear, fb), options={'maxiter': 50000, 'maxfev': 50000})
+                                args=(coeffs, blinear, fb), options={'xtol': 1e-3, 'ftol': 1e-3, 'maxiter': 50000, 'maxfev': 50000})
 
         if not res.success:
             raise RuntimeError(res.message)
