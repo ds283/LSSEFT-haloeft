@@ -269,13 +269,15 @@ class analyse_emcee(analyse_core):
 
             print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
 
+            # note p.keys() must return a list that is ordered in the correct way
             input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
+            output_columns = ['weight', 'like'] + list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3']
 
             table = ascii.read(emcee_path, Reader=ascii.NoHeader, names=input_columns)
 
             with open(getdist_chain_file, 'w') as g:
 
-                writer = csv.DictWriter(g, ['weight', 'like', 'b1', 'b2', 'c0', 'c2', 'c4', 'd1', 'd2', 'd3'], delimiter='\t')
+                writer = csv.DictWriter(g, output_columns, delimiter='\t')
 
                 for row in table:
 
@@ -357,6 +359,7 @@ class analyse_maxlike(analyse_core):
         # this will consist of a single line giving the best-fit values of all parameters, including derived ones
         maxlike_path = path.join('output', maxlike_file)
 
+        # note p.keys() must return a list that is ordered in the correct way
         input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
 
         table = ascii.read(maxlike_path, Reader=ascii.NoHeader, names=input_columns)
