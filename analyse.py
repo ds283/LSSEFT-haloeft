@@ -9,7 +9,7 @@ import haloeft as heft
 
 class EFT_tools(heft.HaloEFT_core):
 
-    def __init__(self, realization, fit_kmin=0.01, fit_kmax=0.30, ren_kmin=0.01, ren_kmax=0.30):
+    def __init__(self, realization, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
 
         # use a dictionary to mimic the CosmoSIS datablock API
         config = {}
@@ -48,7 +48,7 @@ class EFT_tools(heft.HaloEFT_core):
         super(EFT_tools, self).__init__(config, 'EFT_Analyse')
 
 
-    def compute_chisq(self, coeffs):
+    def compute_chisq_variation(self, coeffs):
 
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
@@ -191,10 +191,13 @@ class EFT_tools(heft.HaloEFT_core):
 
 class analyse_core(object):
 
-    def __init__(self, r, p):
+    def __init__(self, r, p, mp, glb):
 
         self.realization = r
         self.params = p
+
+        self.make_params = mp
+        self.get_linear_bias = glb
 
         self.tools = EFT_tools(r)
 
@@ -209,11 +212,29 @@ class analyse_core(object):
         return self.tools
 
 
+    def compare_chisquare(self, ps):
+
+        # compute chi-square for the parameters in ps
+
+        tools = self.tools
+
+        param_dict = self.make_params(ps)
+        coeffs = tools.make_coeffs(param_dict)
+        tools.add_counterterms(coeffs, ps, self.get_linear_bias(ps))
+
+        P0, P2, P4 = tools.build_theory_P_ell(coeffs)
+        lik = sum([tools.compute_likelihood(region, P0, P2, P4, 'all') for region in tools.data_regions])
+
+        chisq = -2.0 * lik
+
+        return chisq
+
+
 class analyse_emcee(analyse_core):
 
-    def __init__(self, r, p, emcee_file, out_file, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, r, p, emcee_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
 
-        super(analyse_emcee, self).__init__(r, p)
+        super(analyse_emcee, self).__init__(r, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
         mixing_folder = path.join('plots', 'mixing')
@@ -281,17 +302,14 @@ class analyse_emcee(analyse_core):
 
                 for row in table:
 
-                    row_dict = {'weight': 1,
-                                'like': -row['like'],
-                                'c0': row['c0'],
-                                'c2': row['c2'],
-                                'c4': row['c4'],
-                                'd1': row['d1'],
-                                'd2': row['d2'],
-                                'd3': row['d3']}
+                    row_dict = {'c0': row['c0'], 'c2': row['c2'], 'c4': row['c4'],
+                                'd1': row['d1'], 'd2': row['d2'], 'd3': row['d3']}
 
                     for par in p:
                         row_dict.update({par: row[par]})
+
+                    minus_log_lik = -row['like']
+                    row_dict.update({'weight': 1, 'like': minus_log_lik})
 
                     writer.writerow(row_dict)
 
@@ -322,9 +340,6 @@ class analyse_emcee(analyse_core):
             h.triangle_plot(self.__samples, stochastic_plot, shaded=True)
             h.export(triangle_stochastic_file)
 
-
-    def get_fit_point(self):
-
         x = self.__samples.getLikeStats()
 
         r = {p: x.parWithName(p).bestfit_sample for p in self.params}
@@ -338,14 +353,20 @@ class analyse_emcee(analyse_core):
 
         r.update(EFT_r)
 
-        return r
+        self.bestfit = r
+        self.bestfit_chisquare = self.compare_chisquare(r)
+
+
+    def get_fit_point(self):
+
+        return self.bestfit
 
 
 class analyse_maxlike(analyse_core):
 
-    def __init__(self, r, p, maxlike_file):
+    def __init__(self, r, p, maxlike_file, make_params, get_linear_bias):
 
-        super(analyse_maxlike, self).__init__(r, p)
+        super(analyse_maxlike, self).__init__(r, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
         plot_folder = path.join('plots')
@@ -369,6 +390,7 @@ class analyse_maxlike(analyse_core):
         r = {p: row[p] for p in list(p.keys() + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'])}
 
         self.bestfit = r
+        self.best_chisquare = self.compare_chisquare(r)
 
 
     def get_fit_point(self):
@@ -377,7 +399,7 @@ class analyse_maxlike(analyse_core):
 
 
 
-def write_summary(realizations, make_params, get_linear_bias, out_file):
+def write_summary(realizations, out_file):
 
     # filenames for GetDist chain-like output
     getdist_param_file = path.join('plots', out_file + '.paramnames')
@@ -437,14 +459,16 @@ def write_summary(realizations, make_params, get_linear_bias, out_file):
 
         for real in realizations:
 
-            row = realizations[real].get_fit_point()
-            tools = realizations[real].get_tools()
+            rlz = realizations[real]
 
-            param_dict = make_params(row)
+            row = rlz.get_fit_point()
+            tools = rlz.get_tools()
+
+            param_dict = rlz.make_params(row)
             coeffs = tools.make_coeffs(param_dict)
-            tools.add_counterterms(coeffs, row, get_linear_bias(row))
+            tools.add_counterterms(coeffs, row, rlz.get_linear_bias(row))
 
-            deviations = tools.compute_chisq(coeffs)
+            deviations = tools.compute_chisq_variation(coeffs)
 
             row.update(deviations)
             row.update({'weight': 1, 'like': 1})
@@ -452,17 +476,19 @@ def write_summary(realizations, make_params, get_linear_bias, out_file):
             writer.writerow(row)
 
 
-def write_Pell(list, make_params, get_linear_bias, out_file):
+def write_Pell(list, out_file):
 
     for real in list:
 
+        rlz = list[real]
+
         p = path.join('plots', out_file + '_' + real + '_Pell.csv')
 
-        bestfit = list[real].get_fit_point()
-        tools = list[real].get_tools()
+        bestfit = rlz.get_fit_point()
+        tools = rlz.get_tools()
 
-        params = make_params(bestfit)
+        params = rlz.make_params(bestfit)
         coeffs = tools.make_coeffs(params)
-        tools.add_counterterms(coeffs, bestfit, get_linear_bias(bestfit))
+        tools.add_counterterms(coeffs, bestfit, rlz.get_linear_bias(bestfit))
 
         tools.make_plot(p, coeffs)

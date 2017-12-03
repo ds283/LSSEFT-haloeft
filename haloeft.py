@@ -388,9 +388,10 @@ class HaloEFT_core(object):
         # build theoretical P_ell with these counterterms
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
-        # sum likelihood over all regions and store
-        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'all') for region in self.data_regions])
-        block[likes, 'GLOBAL_LIKE'] = lik
+        # sum likelihood over all regions and store back into the datablock
+        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'all') for region in self.data_regions])
+        block[likes, 'HALOEFT_LIKE'] = lik
+
 
         # store derived EFT parameters for output with the rest of the chain
         block['counterterms', 'c0'] = values['c0']
@@ -419,7 +420,7 @@ class HaloEFT_core(object):
         return P[0], P[1], P[2]
 
 
-    def __compute_likelihood(self, region, P0, P2, P4, type='all'):
+    def compute_likelihood(self, region, P0, P2, P4, type='all'):
 
         if type is 'all':
             mask = self.conv_fit_mask
@@ -483,7 +484,7 @@ class HaloEFT_core(object):
 
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
-        lik = sum([self.__compute_likelihood(region, P0, P2, P4, 'ren') for region in self.data_regions])
+        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'ren') for region in self.data_regions])
 
         return -lik
 
