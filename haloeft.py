@@ -78,38 +78,53 @@ class HaloEFT_core(object):
 
         # READ AND CACHE WIGGLEZ DATA PRODUCTS
 
-        h1_means = my_config["HaloEFT", "h1_means"]
-        h1_cov = my_config["HaloEFT", "h1_matrix"]
+        h_means = {}
+        h_cov = {}
 
-        h3_means = my_config["HaloEFT", "h3_means"]
-        h3_cov = my_config["HaloEFT", "h3_matrix"]
+        h_means.update({'1h': my_config["HaloEFT", "h1_means"]})
+        h_cov.update({'1h': my_config["HaloEFT", "h1_matrix"]})
 
-        h9_means = my_config["HaloEFT", "h9_means"]
-        h9_cov = my_config["HaloEFT", "h9_matrix"]
+        h_means.update({'3h': my_config["HaloEFT", "h3_means"]})
+        h_cov.update({'3h': my_config["HaloEFT", "h3_matrix"]})
 
-        h11_means = my_config["HaloEFT", "h11_means"]
-        h11_cov = my_config["HaloEFT", "h11_matrix"]
+        h_means.update({'9h': my_config["HaloEFT", "h9_means"]})
+        h_cov.update({'9h': my_config["HaloEFT", "h9_matrix"]})
 
-        h15_means = my_config["HaloEFT", "h15_means"]
-        h15_cov = my_config["HaloEFT", "h15_matrix"]
+        h_means.update({'11h': my_config["HaloEFT", "h11_means"]})
+        h_cov.update({'11h': my_config["HaloEFT", "h11_matrix"]})
 
-        h22_means = my_config["HaloEFT", "h22_means"]
-        h22_cov = my_config["HaloEFT", "h22_matrix"]
+        h_means.update({'15h': my_config["HaloEFT", "h15_means"]})
+        h_cov.update({'15h': my_config["HaloEFT", "h15_matrix"]})
 
+        h_means.update({'22h': my_config["HaloEFT", "h22_means"]})
+        h_cov.update({'22h': my_config["HaloEFT", "h22_matrix"]})
+
+        # object-local storage for data products, held as dictionaries indexed by region label
+
+        # 1. Power spectrum mean values: (a) raw, (b) cut down to region needed for likelihood fit,
+        # (c) cut down to region needed for renormalization
         self.data_raw_means = {}
         self.data_fit_means = {}
         self.data_ren_means = {}
-        self.data_fit_covs = {}
-        self.data_ren_covs = {}
-        self.data_convs = {}
-        self.data_regions = ['1h', '3h', '8h', '11h', '15h', '22h']
 
-        self.__import_WiggleZ_data("1h", h1_means, h1_cov, my_config)
-        self.__import_WiggleZ_data("3h", h3_means, h3_cov, my_config)
-        self.__import_WiggleZ_data("8h", h9_means, h9_cov, my_config)
-        self.__import_WiggleZ_data("11h", h11_means, h11_cov, my_config)
-        self.__import_WiggleZ_data("15h", h15_means, h15_cov, my_config)
-        self.__import_WiggleZ_data("22h", h22_means, h22_cov, my_config)
+        # 2. Inverse covariance matrices: (a) cut down to region needed for likelihood fit,
+        # (b) cut down to region needed for renormalization
+        self.data_fit_inv_covs = {}
+        self.data_ren_inv_covs = {}
+
+        # 4. Measurement errors on the power spectrum mean value
+        self.data_raw_variance = {}
+
+        # 4. Convolution matrix taking theory outputs to each WiggleZ region
+        # (eg. accounts for geometry and selection function)
+        self.data_convs = {}
+
+        # 5. Region labels
+        self.data_regions = ['1h', '3h', '9h', '11h', '15h', '22h']
+
+        # perform import
+        for region in self.data_regions:
+            self.__import_WiggleZ_data(region, h_means[region], h_cov[region], my_config)
 
 
     def __import_WiggleZ_data(self, tag, means_file, matrix_file, my_config):
@@ -148,40 +163,65 @@ class HaloEFT_core(object):
         self.data_fit_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.mean_fit_mask]
         self.data_ren_means[tag] = np.concatenate((this_P0, this_P2, this_P4))[self.__mean_ren_mask]
 
-        CMat = np.empty((3*nbin, 3*nbin))
-        ConvMat = np.empty((3*nbinc, 3*nbinc))
+        # construct empty matrices to hold covariance and convolution matrices after read-in
+        covariance = np.empty((3*nbin, 3*nbin))
+        convolution = np.empty((3*nbinc, 3*nbinc))
 
+        # populate covariance matrix
         for row in cov_table:
 
-            CMat[row['i']-1, row['j']-1] = row['value']
+            covariance[row['i']-1, row['j']-1] = row['value']
 
+        # populate convolution matrix
         for row in conv_table:
 
-            ConvMat[row['i']-1, row['j']-1] = row['value']
+            convolution[row['i']-1, row['j']-1] = row['value']
 
-        CMat_all = (CMat[self.mean_fit_mask, :])[:, self.mean_fit_mask]
 
-        w, p = np.linalg.eig(CMat_all)
+        # strip out diagonal entries of covariance matrix as error estimates
+        self.data_raw_variance[tag] = np.diagonal(covariance)
+
+        # cut covariance matrix down only to those values used in the likelihood fit
+        # (notice we do this *before* inversion)
+        covariance_cut_fit = (covariance[self.mean_fit_mask, :])[:, self.mean_fit_mask]
+
+        # store inverse covariance matrix
+        w, p = np.linalg.eig(covariance_cut_fit)
         if not np.all(w > 0):
+
+            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive
             print 'using pseudo-inverse covariance matrix for "all" group in region {tag}'.format(tag=tag)
-            self.data_fit_covs[tag] = np.linalg.pinv(CMat_all)
+            self.data_fit_inv_covs[tag] = np.linalg.pinv(covariance_cut_fit)
+
         else:
-            self.data_fit_covs[tag] = np.linalg.inv(CMat_all)
 
-        CMat_ren = (CMat[self.__mean_ren_mask, :])[:, self.__mean_ren_mask]
+            self.data_fit_inv_covs[tag] = np.linalg.inv(covariance_cut_fit)
 
-        w, p = np.linalg.eig(CMat_ren)
+        # cut covariance matrix down only to those values used in renormalization
+        # (notice we do this *before* inversion)
+        covariance_cut_ren = (covariance[self.__mean_ren_mask, :])[:, self.__mean_ren_mask]
+
+        # store inverse covariance matrix
+        w, p = np.linalg.eig(covariance_cut_ren)
         if not np.all(w > 0):
-            print 'using pseudo-inverse covariance matrix for "ren" group in region {tag}'.format(tag=tag)
-            self.data_ren_covs[tag] = np.linalg.pinv(CMat_ren)
-        else:
-            self.data_ren_covs[tag] = np.linalg.inv(CMat_ren)
 
-        self.data_convs[tag] = ConvMat
+            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive
+            print 'using pseudo-inverse covariance matrix for "ren" group in region {tag}'.format(tag=tag)
+            self.data_ren_inv_covs[tag] = np.linalg.pinv(covariance_cut_ren)
+
+        else:
+
+            self.data_ren_inv_covs[tag] = np.linalg.inv(covariance_cut_ren)
+
+        # store convolution matrix
+        self.data_convs[tag] = convolution
 
 
     def __import_theory(self, tables, counterterms, db, my_config):
 
+        # extract identifiers needed to fix which model we read from the database -- there are a lot of these,
+        # needed to fix the final redshift, parameters used during integration, IR and UV cutoffs
+        # and IR resummation scale
         model = my_config["HaloEFT", "model"]
         growth_params = my_config["HaloEFT", "growth_params"]
         loop_params = my_config["HaloEFT", "loop_params"]
@@ -193,23 +233,25 @@ class HaloEFT_core(object):
         UV_cutoff = my_config["HaloEFT", "UV_cutoff"]
         IR_resum = my_config["HaloEFT", "IR_resum"]
 
-        data = (model, growth_params, loop_params, XY_params, zid, init_Pk, final_Pk, IR_cutoff, UV_cutoff, IR_resum)
+        # bundle identifiers together into a dictionary for easy use
+        data = {'model': model, 'growth': growth_params, 'loop': loop_params, 'XY': XY_params,
+                'zid': zid, 'init_Pk': init_Pk, 'final_Pk': final_Pk,
+                'IR_cutoff': IR_cutoff, 'UV_cutoff': UV_cutoff, 'IR_resum': IR_resum}
 
+        # open SQLite3 connexion to database
         with sqlite3.connect(db) as conn:
 
+            # for each power spectrum table, read in its P0, P2, and P4 values
             for tag in tables:
 
-                ell0 = self.__import_theory_P_ell(conn, tag, data, 0)
-                ell2 = self.__import_theory_P_ell(conn, tag, data, 2)
-                ell4 = self.__import_theory_P_ell(conn, tag, data, 4)
+                self.theory_payload[tag] = self.__import_theory_Pk(conn, data, tag)
 
-                self.theory_payload[tag] = np.array([ell0, ell2, ell4])
-
+            # for each counterterm, read in its values likewise
             for tag in counterterms:
 
                 self.theory_payload[tag] = self.__import_theory_counterterm(conn, tag, data)
 
-            # need f to compute mu^6 counterterm
+            # need f to compute mu^6 counterterm, so read its value
             self.__import_f(conn, data)
 
         # finally, construct stochastic counterterms
@@ -233,23 +275,38 @@ class HaloEFT_core(object):
         self.theory_payload['d3'] = np.array([d3_P0, d3_P2, d3_P4])
 
 
+    def __import_theory_Pk(self, conn, data, tag):
+
+        P0 = self.__import_theory_P_ell(conn, tag, data, 0)
+        P2 = self.__import_theory_P_ell(conn, tag, data, 2)
+        P4 = self.__import_theory_P_ell(conn, tag, data, 4)
+
+        Pk_group = np.array([P0, P2, P4])
+
+        return Pk_group
+
+
     def __import_theory_P_ell(self, conn, tag, data, ell):
 
-        model_id, growth_params_id, loop_id, XY_params_id, zid, init_Pk, final_Pk, IR_cutoff, UV_cutoff, IR_resum = data
-
+        # obtain a database cursor
         cursor = conn.cursor()
 
+        # construct the relevant table name from knowing its tag, and whether we want the ell=0, 2, or 4 mode
         table_name = '{tag}_P{ell}'.format(tag=tag, ell=ell)
 
+        # execute SQL query
         cursor.execute(
-            "SELECT k_config.k AS k, sample.P1loopSPT_resum AS Pell FROM (SELECT * FROM " + table_name + " WHERE mid=:model AND growth_params=:growth AND loop_params=:loop AND XY_params=:XY AND zid=:zid AND init_Pk_id=:init_Pk AND final_Pk_id=:final_Pk AND IR_cutoff_id=:IR_cutoff AND UV_cutoff_id=:UV_cutoff AND IR_resum_id=:IR_resum) AS sample INNER JOIN k_config ON sample.kid = k_config.id ORDER BY k;",
-            {'model': model_id, 'growth': growth_params_id, 'loop': loop_id, 'XY': XY_params_id, 'zid': zid,
-             'init_Pk': init_Pk, 'final_Pk': final_Pk, 'IR_cutoff': IR_cutoff, 'UV_cutoff': UV_cutoff,
-             'IR_resum': IR_resum})
+            ("SELECT k_config.k AS k, sample.P1loopSPT_resum AS Pell FROM (SELECT * FROM " + table_name + " "
+             "WHERE mid=:model AND growth_params=:growth AND loop_params=:loop AND XY_params=:XY "
+             "AND zid=:zid AND init_Pk_id=:init_Pk AND final_Pk_id=:final_Pk AND IR_cutoff_id=:IR_cutoff "
+             "AND UV_cutoff_id=:UV_cutoff AND IR_resum_id=:IR_resum) AS sample "
+             "INNER JOIN k_config ON sample.kid = k_config.id ORDER BY k;"),
+            data)
 
         ks = []
         Pells = []
 
+        # read results from cursor
         for row in cursor:
 
             k, Pell = row
@@ -261,23 +318,27 @@ class HaloEFT_core(object):
 
     def __import_theory_counterterm(self, conn, tag, data):
 
+        # obtain a database cursor
         cursor = conn.cursor()
 
-        model_id, growth_params_id, loop_id, XY_params_id, zid, init_Pk, final_Pk, IR_cutoff, UV_cutoff, IR_resum = data
-
+        # construct the relevant table name from knowings its tag
         table_name = 'counterterms_{tag}'.format(tag=tag)
 
+        # execute SQL query
         cursor.execute(
-            "SELECT k_config.k AS k, sample.P0_k2_resum AS P0, sample.P2_k2_resum AS P2, sample.P4_k2_resum AS P4 FROM (SELECT * FROM " + table_name + " WHERE mid=:model AND growth_params=:growth AND XY_params=:XY AND zid=:zid AND init_Pk_id=:init_Pk AND final_Pk_id=:final_Pk AND IR_cutoff_id=:IR_cutoff AND UV_cutoff_id=:UV_cutoff AND IR_resum_id=:IR_resum) AS sample INNER JOIN k_config ON sample.kid = k_config.id ORDER BY k;",
-            {'model': model_id, 'growth': growth_params_id, 'XY': XY_params_id, 'zid': zid,
-             'init_Pk': init_Pk, 'final_Pk': final_Pk, 'IR_cutoff': IR_cutoff, 'UV_cutoff': UV_cutoff,
-             'IR_resum': IR_resum})
+            ("SELECT k_config.k AS k, sample.P0_k2_resum AS P0, sample.P2_k2_resum AS P2, sample.P4_k2_resum AS P4 "
+             "FROM (SELECT * FROM " + table_name + " WHERE mid=:model AND growth_params=:growth AND XY_params=:XY "
+             "AND zid=:zid AND init_Pk_id=:init_Pk AND final_Pk_id=:final_Pk AND IR_cutoff_id=:IR_cutoff "
+             "AND UV_cutoff_id=:UV_cutoff AND IR_resum_id=:IR_resum) AS sample "
+             "INNER JOIN k_config ON sample.kid = k_config.id ORDER BY k;"),
+            data)
 
         ks = []
         P0s = []
         P2s = []
         P4s = []
 
+        # read results from cursor
         for row in cursor:
 
             k, P0, P2, P4 = row
@@ -291,12 +352,13 @@ class HaloEFT_core(object):
 
     def __import_f(self, conn, data):
 
+        # obtain database cursor
         cursor = conn.cursor()
 
-        model_id, growth_params_id, loop_id, XY_params_id, zid, init_Pk, final_Pk, IR_cutoff, UV_cutoff, IR_resum = data
+        # execute SQL query
+        cursor.execute("SELECT f_linear FROM f_factors WHERE zid=:zid;", data)
 
-        cursor.execute("SELECT f_linear FROM f_factors WHERE zid=:zid;", {'zid': zid})
-
+        # read value
         flist = cursor.fetchone()
 
         if flist is None:
@@ -389,7 +451,7 @@ class HaloEFT_core(object):
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
 
         # sum likelihood over all regions and store back into the datablock
-        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'all') for region in self.data_regions])
+        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'fit') for region in self.data_regions])
         block[likes, 'HALOEFT_LIKE'] = lik
 
 
@@ -420,16 +482,16 @@ class HaloEFT_core(object):
         return P[0], P[1], P[2]
 
 
-    def compute_likelihood(self, region, P0, P2, P4, type='all'):
+    def compute_likelihood(self, region, P0, P2, P4, type='fit'):
 
-        if type is 'all':
+        if type is 'fit':
             mask = self.conv_fit_mask
             means = self.data_fit_means[region]
-            cov = self.data_fit_covs[region]
+            inv_cov = self.data_fit_inv_covs[region]
         else:
             mask = self.__conv_ren_mask
             means = self.data_ren_means[region]
-            cov = self.data_ren_covs[region]
+            inv_cov = self.data_ren_inv_covs[region]
 
         conv = self.data_convs[region]
 
@@ -442,8 +504,7 @@ class HaloEFT_core(object):
 
         # compute chi^2
         Delta = Ptheory - means
-
-        return -np.dot(np.dot(Delta, cov), Delta) / 2.0
+        return -np.dot(np.dot(Delta, inv_cov), Delta) / 2.0
 
 
     def __compute_EFT_counterterms(self, coeffs, blinear):

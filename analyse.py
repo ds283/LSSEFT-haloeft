@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.io import ascii
 import csv
-from os import path, makedirs
+import os
 from getdist import mcsamples as mcs
 from getdist import plots as gdp
 import haloeft as heft
@@ -50,73 +50,93 @@ class EFT_tools(heft.HaloEFT_core):
 
     def compute_chisq_variation(self, coeffs):
 
+        # build EFT prediction for power spectra corresponding to this coefficient combination
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
-
         P = np.concatenate( (P0, P2, P4) )
 
+        # set up empty dictionary to hold return values
         rval = {}
 
+        # set up mask: we will gradually add True values to this as we step through the different
+        # k-sample points that contribute to the final chi-square value
+        # notice the mask is for just one P_ell individually, not the concatenated group (P0, P2, P4)
         i_mask = np.array([False for i in xrange(len(self.WiggleZ_mean_ks))])
 
+        # step through each available sample point
         for i in xrange(len(i_mask)):
 
+            # is this sample point included in the fit mask?
             i_mask[i] = self.mean_fit_mask[i]
 
+            # if so, compute the chi-square up to this k-sample point; otherwise, ignore it
             if(i_mask[i]):
 
+                # extend mask for the concatenated group (P0, P2, P4)
                 i_mask_full = np.concatenate( (i_mask, i_mask, i_mask) )
 
+                # zero accumulator for chi-square
                 chisq = 0.0
 
+                # loop over all data regions:
                 for region in self.data_regions:
 
-                    mask = self.conv_to_means_mask
+                    # extract data products for this region
                     means = self.data_fit_means[region]
-                    cov = self.data_fit_covs[region]
+                    inv_cov = self.data_fit_inv_covs[region]
                     conv = self.data_convs[region]
 
+                    # convolve theory prediction with convolution matrix
                     Pconv = np.dot(conv, P)
 
-                    Ptheory = Pconv[mask]
+                    # cut raw region used in fit (ie. from 0.01 to 0.29) out of full convolved vector
+                    Ptheory = Pconv[self.conv_to_means_mask]
 
+                    # cut down to just the k-sample points we are using here
                     Ptheory_cut = Ptheory[i_mask_full]
 
+                    # cut a mask for the data means and data covariance matrix out of the mask for the raw region
                     i_mask_means = i_mask_full[self.mean_fit_mask]
                     means_cut = means[i_mask_means]
-                    cov_cut = cov[i_mask_means,:][:,i_mask_means]
+                    inv_cov_cut = inv_cov[i_mask_means,:][:,i_mask_means]
 
+                    # take difference between theory and data, and process into a chi-square
                     Delta_cut = Ptheory_cut - means_cut
-
-                    chisq += np.dot(np.dot(Delta_cut, cov_cut), Delta_cut)
+                    chisq += np.dot(np.dot(Delta_cut, inv_cov_cut), Delta_cut)
 
                 rval[self.labels[i]] = chisq
 
         return rval
 
 
-    def make_plot(self, plot_file, coeffs):
+    def make_summary_plot(self, plot_file, coeffs):
 
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
         P = np.concatenate( (P0, P2, P4) )
 
         with open(plot_file, 'w') as f:
 
-            print 'generating theory + fit file "{f}"'.format(f=plot_file)
+            print 'generating theory + data fit comparison file "{f}"'.format(f=plot_file)
 
+            # add labels for global columns
             labels = ['k', 'P0', 'P2', 'P4',
                       'P0_theory_avg', 'P2_theory_avg', 'P4_theory_avg',
                       'P0_WizCOLA_avg', 'P2_WizCOLA_avg', 'P4_WizCOLA_avg',
+                      'P0_WizCOLA_err_avg', 'P2_WizCOLA_err_avg', 'P4_WizCOLA_err_avg',
                       'P0_Delta_avg', 'P2_Delta_avg', 'P4_Delta_avg']
 
+            # supplement with labels for per-region columns
             for r in self.data_regions:
-                labels = labels + [r + '_P0_theory', r + '_P2_theory', r + '_P4_theory',
-                                   r + '_P0_WizCOLA', r + '_P2_WizCOLA', r + '_P4_WizCOLA',
-                                   r + '_P0_Delta', r + '_P2_Delta', r + '_P4_Delta']
+                labels += [r + '_P0_theory', r + '_P2_theory', r + '_P4_theory',
+                           r + '_P0_WizCOLA', r + '_P2_WizCOLA', r + '_P4_WizCOLA',
+                           r + '_P0_WizCOLA_err', r + '_P2_WizCOLA_err', r + '_P4_WizCOLA_err',
+                           r + '_P0_Delta', r + '_P2_Delta', r + '_P4_Delta']
 
+            # open a CSV writer for these columns and emit a header
             writer = csv.DictWriter(f, labels)
             writer.writeheader()
 
-            # loop over each k sample point to be included in the analysis
+            # loop over each k sample point to be included in the analysis,
+            # and then process its contribution for each region
             for i in xrange(len(self.WiggleZ_mean_ks)):
 
                 row = {'k': self.WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
@@ -130,6 +150,10 @@ class EFT_tools(heft.HaloEFT_core):
                 P2_WizCOLA_tot = 0
                 P4_WizCOLA_tot = 0
 
+                P0_WizCOLA_var_tot = 0
+                P2_WizCOLA_var_tot = 0
+                P4_WizCOLA_var_tot = 0
+
                 P0_Delta_tot = 0
                 P2_Delta_tot = 0
                 P4_Delta_tot = 0
@@ -138,6 +162,7 @@ class EFT_tools(heft.HaloEFT_core):
                 for r in self.data_regions:
 
                     means = self.data_raw_means[r]
+                    variances = self.data_raw_variance[r]
                     conv = self.data_convs[r]
 
                     Pconv = np.dot(conv, P)
@@ -150,9 +175,13 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_data = means[1 * self.nbin + i]
                     P4_data = means[2 * self.nbin + i]
 
-                    row.update({r+'_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data})
-                    row.update({r+'_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data})
-                    row.update({r+'_P4_theory': P4_theory, r + '_P4_WizCOLA': P4_data})
+                    P0_data_var = variances[0 * self.nbin + i]
+                    P2_data_var = variances[1 * self.nbin + i]
+                    P4_data_var = variances[2 * self.nbin + i]
+
+                    row.update({r+'_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data, r + '_P0_WizCOLA_err': np.sqrt(P0_data_var)})
+                    row.update({r+'_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data, r + '_P2_WizCOLA_err': np.sqrt(P2_data_var)})
+                    row.update({r+'_P4_theory': P4_theory, r + '_P4_WizCOLA': P4_data, r + '_P4_WizCOLA_err': np.sqrt(P4_data_var)})
 
                     P0_delta = P0_data - P0_theory
                     P2_delta = P2_data - P2_theory
@@ -170,6 +199,10 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_WizCOLA_tot += P2_data
                     P4_WizCOLA_tot += P4_data
 
+                    P0_WizCOLA_var_tot += P0_data_var
+                    P2_WizCOLA_var_tot += P2_data_var
+                    P4_WizCOLA_var_tot += P4_data_var
+
                     P0_Delta_tot += P0_delta
                     P2_Delta_tot += P2_delta
                     P4_Delta_tot += P4_delta
@@ -182,6 +215,9 @@ class EFT_tools(heft.HaloEFT_core):
                             'P0_WizCOLA_avg': P0_WizCOLA_tot/regions,
                             'P2_WizCOLA_avg': P2_WizCOLA_tot/regions,
                             'P4_WizCOLA_avg': P4_WizCOLA_tot/regions,
+                            'P0_WizCOLA_err_avg': np.sqrt(P0_WizCOLA_var_tot/regions**2),
+                            'P2_WizCOLA_err_avg': np.sqrt(P2_WizCOLA_var_tot/regions**2),
+                            'P4_WizCOLA_err_avg': np.sqrt(P4_WizCOLA_var_tot/regions**2),
                             'P0_Delta_avg': P0_Delta_tot/regions,
                             'P2_Delta_avg': P2_Delta_tot/regions,
                             'P4_Delta_avg': P4_Delta_tot/regions})
@@ -223,7 +259,7 @@ class analyse_core(object):
         tools.add_counterterms(coeffs, ps, self.get_linear_bias(ps))
 
         P0, P2, P4 = tools.build_theory_P_ell(coeffs)
-        lik = sum([tools.compute_likelihood(region, P0, P2, P4, 'all') for region in tools.data_regions])
+        lik = sum([tools.compute_likelihood(region, P0, P2, P4, 'fit') for region in tools.data_regions])
 
         chisq = -2.0 * lik
 
@@ -237,30 +273,38 @@ class analyse_emcee(analyse_core):
         super(analyse_emcee, self).__init__(r, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
-        mixing_folder = path.join('plots', 'mixing')
-        stochastic_folder = path.join('plots', 'stochastic')
+        mixing_folder = os.path.join('plots', 'mixing')
+        stochastic_folder = os.path.join('plots', 'stochastic')
 
         # generate folder hierarchy if it does not already exist
-        if not path.exists(mixing_folder):
-            makedirs(mixing_folder)
+        if not os.path.exists(mixing_folder):
+            try:
+                os.makedirs(mixing_folder)
+            except OSError, e:
+                if e.errno != os.errno.EEXIST:
+                    raise
 
-        if not path.exists(stochastic_folder):
-            makedirs(stochastic_folder)
+        if not os.path.exists(stochastic_folder):
+            try:
+                os.makedirs(stochastic_folder)
+            except OSError, e:
+                if e.errno != os.errno.EEXIST:
+                    raise
 
         # generate paths for GetDist-format output files
-        getdist_root = path.join('plots', out_file)
-        getdist_param_file = path.join('plots', out_file + '.paramnames')
-        getdist_chain_file = path.join('plots', out_file + '.txt')
+        getdist_root = os.path.join('plots', out_file)
+        getdist_param_file = os.path.join('plots', out_file + '.paramnames')
+        getdist_chain_file = os.path.join('plots', out_file + '.txt')
 
         # generate paths for output plots
-        triangle_mixing_file = path.join(mixing_folder, out_file + '.png')
-        triangle_stochastic_file = path.join(stochastic_folder, out_file + '.png')
+        triangle_mixing_file = os.path.join(mixing_folder, out_file + '.png')
+        triangle_stochastic_file = os.path.join(stochastic_folder, out_file + '.png')
 
 
         # CONVERT EMCEE FILES TO GETDIST FORMAT
 
         # generate GetDist .paramnames file if it does not already exist
-        if not path.exists(getdist_param_file):
+        if not os.path.exists(getdist_param_file):
 
             print 'generating GetDist .paramnames file "{f}"'.format(f=getdist_param_file)
 
@@ -284,9 +328,9 @@ class analyse_emcee(analyse_core):
 
 
         # generate GetDist-compatible chain file from emcee output, if it does not already exist
-        emcee_path = path.join('output', emcee_file)
+        emcee_path = os.path.join('output', emcee_file)
 
-        if not path.exists(getdist_chain_file):
+        if not os.path.exists(getdist_chain_file):
 
             print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
 
@@ -369,16 +413,20 @@ class analyse_maxlike(analyse_core):
         super(analyse_maxlike, self).__init__(r, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
-        plot_folder = path.join('plots')
+        plot_folder = os.path.join('plots')
 
-        if not path.exists(plot_folder):
-            makedirs(plot_folder)
+        if not os.path.exists(plot_folder):
+            try:
+                os.makedirs(plot_folder)
+            except OSError, e:
+                if e.errno != os.errno.EEXIST:
+                    raise
 
 
         # READ OUTPUT FILE GENERATED BY MAXLIKE
 
         # this will consist of a single line giving the best-fit values of all parameters, including derived ones
-        maxlike_path = path.join('output', maxlike_file)
+        maxlike_path = os.path.join('output', maxlike_file)
 
         # note p.keys() must return a list that is ordered in the correct way
         input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
@@ -402,8 +450,8 @@ class analyse_maxlike(analyse_core):
 def write_summary(realizations, out_file):
 
     # filenames for GetDist chain-like output
-    getdist_param_file = path.join('plots', out_file + '.paramnames')
-    getdist_chain_file = path.join('plots', out_file + '.txt')
+    getdist_param_file = os.path.join('plots', out_file + '.paramnames')
+    getdist_chain_file = os.path.join('plots', out_file + '.txt')
 
     # parameter list from all realizations should be the same
     params = None
@@ -482,7 +530,7 @@ def write_Pell(list, out_file):
 
         rlz = list[real]
 
-        p = path.join('plots', out_file + '_' + real + '_Pell.csv')
+        p = os.path.join('plots', out_file + '_' + real + '_Pell.csv')
 
         bestfit = rlz.get_fit_point()
         tools = rlz.get_tools()
@@ -491,4 +539,4 @@ def write_Pell(list, out_file):
         coeffs = tools.make_coeffs(params)
         tools.add_counterterms(coeffs, bestfit, rlz.get_linear_bias(bestfit))
 
-        tools.make_plot(p, coeffs)
+        tools.make_summary_plot(p, coeffs)
