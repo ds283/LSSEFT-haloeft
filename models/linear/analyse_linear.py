@@ -1,43 +1,46 @@
 import analyse as asy
 from collections import OrderedDict
-import linear_params as lin
+import multiprocessing as mp
+import linear_params as param_tools
+
+tag = 'linear'
 
 params = OrderedDict([('b1', 'b_1')])
 
-r01 = asy.analyse_emcee(1, params, 'output_linear_r01.txt', 'linear_r01', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r02 = asy.analyse_emcee(2, params, 'output_linear_r02.txt', 'linear_r02', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r03 = asy.analyse_emcee(3, params, 'output_linear_r03.txt', 'linear_r03', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r04 = asy.analyse_emcee(4, params, 'output_linear_r04.txt', 'linear_r04', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r05 = asy.analyse_emcee(5, params, 'output_linear_r05.txt', 'linear_r05', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r06 = asy.analyse_emcee(6, params, 'output_linear_r06.txt', 'linear_r06', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r07 = asy.analyse_emcee(7, params, 'output_linear_r07.txt', 'linear_r07', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r08 = asy.analyse_emcee(8, params, 'output_linear_r08.txt', 'linear_r08', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r09 = asy.analyse_emcee(9, params, 'output_linear_r09.txt', 'linear_r09', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
-r10 = asy.analyse_emcee(10, params, 'output_linear_r10.txt', 'linear_r10', lin.make_params, lin.get_linear_bias,
-                        ['b1', 'c0', 'c2', 'c4'],
-                        ['b1', 'd1', 'd2', 'd3'])
+regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
-list = OrderedDict(
-    [('r01', r01), ('r02', r02), ('r03', r03), ('r04', r04), ('r05', r05), ('r06', r06), ('r07', r07), ('r08', r08),
-     ('r09', r09), ('r10', r10)])
+numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-asy.write_summary(list, 'linear_ensemble')
-asy.write_Pell(list, 'linear_ensemble')
+inputs = {'r01': 'output_'+tag+'_r01.txt', 'r02': 'output_'+tag+'_r02.txt', 'r03': 'output_'+tag+'_r03.txt',
+          'r04': 'output_'+tag+'_r04.txt', 'r05': 'output_'+tag+'_r05.txt', 'r06': 'output_'+tag+'_r06.txt',
+          'r07': 'output_'+tag+'_r07.txt', 'r08': 'output_'+tag+'_r08.txt', 'r09': 'output_'+tag+'_r09.txt',
+          'r10': 'output_'+tag+'_r10.txt'}
+
+outputs = {'r01': tag+'_r01', 'r02': tag+'_r02', 'r03': tag+'_r03', 'r04': tag+'_r04',
+           'r05': tag+'_r05', 'r06': tag+'_r06', 'r07': tag+'_r07', 'r08': tag+'_r08',
+           'r09': tag+'_r09', 'r10': tag+'_r10'}
+
+mixing_params = ['b1', 'c0', 'c2', 'c4']
+stochastic_params = ['b1', 'd1', 'd2', 'd3']
+
+
+def f(tag):
+
+    return asy.analyse_emcee(numbers[tag], params, inputs[tag], outputs[tag],
+                             param_tools.make_params, param_tools.get_linear_bias,
+                             mixing_params, stochastic_params)
+
+
+if __name__ == '__main__':
+
+    list = OrderedDict()
+
+    p = mp.Pool()
+
+    for n, r in enumerate(p.map(f, regions)):
+
+        label = regions[n]
+        list[label] = r
+
+    asy.write_summary(list, tag+'_ensemble')
+    asy.write_Pell(list, tag+'_ensemble')

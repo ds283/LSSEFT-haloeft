@@ -1,24 +1,47 @@
 import analyse as asy
 from collections import OrderedDict
-import full_params as fp
+import multiprocessing as mp
+import full_params as param_tools
+
+tag = 'full'
 
 params = OrderedDict([('b1_1', 'b_1^{(1)}'), ('b1_2', 'b_1^{(2)}'), ('b1_3', 'b_1^{(3)}'),
                       ('b2_2', 'b_2^{(2)}'), ('bG2_2', 'b_{G_2}^{(2)}'), ('bG2_3', 'b_{G_2}^{(3)}')])
 
-r01 = asy.analyse_emcee(1, params, 'output/output_full_r01.txt', 'plots/full_r01.txt', fp.make_params, fp.get_linear_bias)
-r02 = asy.analyse_emcee(2, params, 'output/output_full_r02.txt', 'plots/full_r02.txt', fp.make_params, fp.get_linear_bias)
-r03 = asy.analyse_emcee(3, params, 'output/output_full_r03.txt', 'plots/full_r03.txt', fp.make_params, fp.get_linear_bias)
-r04 = asy.analyse_emcee(4, params, 'output/output_full_r04.txt', 'plots/full_r04.txt', fp.make_params, fp.get_linear_bias)
-r05 = asy.analyse_emcee(5, params, 'output/output_full_r05.txt', 'plots/full_r05.txt', fp.make_params, fp.get_linear_bias)
-r06 = asy.analyse_emcee(6, params, 'output/output_full_r06.txt', 'plots/full_r06.txt', fp.make_params, fp.get_linear_bias)
-r07 = asy.analyse_emcee(7, params, 'output/output_full_r07.txt', 'plots/full_r07.txt', fp.make_params, fp.get_linear_bias)
-r08 = asy.analyse_emcee(8, params, 'output/output_full_r08.txt', 'plots/full_r08.txt', fp.make_params, fp.get_linear_bias)
-r09 = asy.analyse_emcee(9, params, 'output/output_full_r09.txt', 'plots/full_r09.txt', fp.make_params, fp.get_linear_bias)
-r10 = asy.analyse_emcee(10, params, 'output/output_full_r10.txt', 'plots/full_r10.txt', fp.make_params, fp.get_linear_bias)
+regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
-list = OrderedDict(
-    [('r01', r01), ('r02', r02), ('r03', r03), ('r04', r04), ('r05', r05), ('r06', r06), ('r07', r07), ('r08', r08),
-     ('r09', r09), ('r10', r10)])
+numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-asy.write_summary(list, 'full_ensemble')
-asy.write_Pell(list, 'full_ensemble')
+inputs = {'r01': 'output_'+tag+'_r01.txt', 'r02': 'output_'+tag+'_r02.txt', 'r03': 'output_'+tag+'_r03.txt',
+          'r04': 'output_'+tag+'_r04.txt', 'r05': 'output_'+tag+'_r05.txt', 'r06': 'output_'+tag+'_r06.txt',
+          'r07': 'output_'+tag+'_r07.txt', 'r08': 'output_'+tag+'_r08.txt', 'r09': 'output_'+tag+'_r09.txt',
+          'r10': 'output_'+tag+'_r10.txt'}
+
+outputs = {'r01': tag+'_r01', 'r02': tag+'_r02', 'r03': tag+'_r03', 'r04': tag+'_r04',
+           'r05': tag+'_r05', 'r06': tag+'_r06', 'r07': tag+'_r07', 'r08': tag+'_r08',
+           'r09': tag+'_r09', 'r10': tag+'_r10'}
+
+mixing_params = None
+stochastic_params = None
+
+
+def f(tag):
+
+    return asy.analyse_emcee(numbers[tag], params, inputs[tag], outputs[tag],
+                             param_tools.make_params, param_tools.get_linear_bias,
+                             mixing_params, stochastic_params)
+
+
+if __name__ == '__main__':
+
+    list = OrderedDict()
+
+    p = mp.Pool()
+
+    for n, r in enumerate(p.map(f, regions)):
+
+        label = regions[n]
+        list[label] = r
+
+    asy.write_summary(list, tag+'_ensemble')
+    asy.write_Pell(list, tag+'_ensemble')
