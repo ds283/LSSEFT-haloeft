@@ -1,9 +1,11 @@
 import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
+import traceback
 import linear_params as param_tools
 
 tag = 'linear'
+model_name = 'Linear'
 
 params = OrderedDict([('b1', 'b_1')])
 
@@ -26,9 +28,23 @@ stochastic_params = ['b1', 'd1', 'd2', 'd3']
 
 def f(tag):
 
-    return asy.analyse_emcee(numbers[tag], params, inputs[tag], outputs[tag],
-                             param_tools.make_params, param_tools.get_linear_bias,
-                             mixing_params, stochastic_params)
+    try:
+
+        obj = asy.analyse_CosmoSIS(numbers[tag], model_name, params, inputs[tag], outputs[tag],
+                                   param_tools.make_params, param_tools.get_linear_bias,
+                                   mixing_params, stochastic_params)
+
+    except Exception as e:
+
+        print 'Caught exception in worker thread'
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        raise e
+
+    return obj
 
 
 if __name__ == '__main__':
@@ -41,6 +57,8 @@ if __name__ == '__main__':
 
         label = regions[n]
         list[label] = r
+
+    p.close()
 
     asy.write_summary(list, tag+'_ensemble')
     asy.write_Pell(list, tag+'_ensemble')

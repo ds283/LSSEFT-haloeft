@@ -6,6 +6,11 @@ from scipy import optimize
 import sqlite3
 
 
+ConditionNumberTolerance = 1E-4
+MatrixInverseTolerance = 1E-10
+ConvCeiling = 4.0
+
+
 class HaloEFT_core(object):
 
     def __init__(self, my_config, my_name):
@@ -123,8 +128,9 @@ class HaloEFT_core(object):
         self.data_regions = ['1h', '3h', '9h', '11h', '15h', '22h']
 
         # perform import
-        for region in self.data_regions:
-            self.__import_WiggleZ_data(region, h_means[region], h_cov[region], my_config)
+        for r in self.data_regions:
+
+            self.__import_WiggleZ_data(r, h_means[r], h_cov[r], my_config)
 
 
     def __import_WiggleZ_data(self, tag, means_file, matrix_file, my_config):
@@ -144,7 +150,7 @@ class HaloEFT_core(object):
         cov_table = ascii.read(matrix_file, Reader=ascii.NoHeader, data_start=0, data_end=(3*nbin)**2,
                                names=['i', 'j', 'value'])
 
-        conv_table = ascii.read(matrix_file, Reader=ascii.NoHeader, data_start=(3*nbin)**2+1, data_end=(3*nbin)**2+(3*nbinc)**2,
+        conv_table = ascii.read(matrix_file, Reader=ascii.NoHeader, data_start=(3*nbin)**2, data_end=(3*nbin)**2+(3*nbinc)**2,
                                 names=['i', 'j', 'value'])
 
         # want to extract the power spectrum for a given realization, so group mean_table by realization
@@ -167,15 +173,33 @@ class HaloEFT_core(object):
         covariance = np.empty((3*nbin, 3*nbin))
         convolution = np.empty((3*nbinc, 3*nbinc))
 
+        covariance_flags = np.zeros((3*nbin, 3*nbin), dtype=bool)
+        convolution_flags = np.zeros((3*nbinc, 3*nbinc), dtype=bool)
+
         # populate covariance matrix
         for row in cov_table:
 
             covariance[row['i']-1, row['j']-1] = row['value']
+            covariance_flags[row['i']-1, row['j']-1] = True
 
         # populate convolution matrix
         for row in conv_table:
 
             convolution[row['i']-1, row['j']-1] = row['value']
+            convolution_flags[row['i']-1, row['j']-1] = True
+
+
+        if np.any(covariance_flags == False):
+
+            print '!! region {tag}: not all elements of covariance matrix initialized'.format(tag=tag)
+            print cov_table
+            raise RuntimeError
+
+        if np.any(convolution_flags == False):
+
+            print '!! region {tag}: not all elements of convolution matrix initialized'.format(tag=tag)
+            print conv_table
+            raise RuntimeError
 
 
         # strip out diagonal entries of covariance matrix as error estimates
@@ -187,15 +211,34 @@ class HaloEFT_core(object):
 
         # store inverse covariance matrix
         w, p = np.linalg.eig(covariance_cut_fit)
-        if not np.all(w > 0):
+        # print '-- region {tag} fit-covariance matrix eigenvalue hierarchy = {e}'.format(tag=tag, e=np.min(w)/np.max(w))
+        if not np.all(w > 0) or np.min(w)/np.max(w) < ConditionNumberTolerance:
 
-            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive
-            print 'using pseudo-inverse covariance matrix for "all" group in region {tag}'.format(tag=tag)
-            self.data_fit_inv_covs[tag] = np.linalg.pinv(covariance_cut_fit)
+            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive, or condition number is large
+            print '-- region {tag}: using pseudo-inverse covariance matrix for "all" group'.format(tag=tag)
+            covariance_cut_fit_inv = np.linalg.pinv(covariance_cut_fit)
+
+            test1 = abs(np.dot(covariance_cut_fit, covariance_cut_fit_inv) - np.identity(covariance_cut_fit.shape[0]))
+            test2 = abs(np.dot(covariance_cut_fit_inv, covariance_cut_fit) - np.identity(covariance_cut_fit.shape[0]))
+
+            if test1.max() > MatrixInverseTolerance or test2.max() > MatrixInverseTolerance:
+                print '-- region {tag}: test1 max value = {t1}, test2 max value = {t2}'.format(tag=tag, t1=test1.max(), t2=test2.max())
+                raise RuntimeError
+
+            self.data_fit_inv_covs[tag] = covariance_cut_fit_inv
 
         else:
 
-            self.data_fit_inv_covs[tag] = np.linalg.inv(covariance_cut_fit)
+            covariance_cut_fit_inv = np.linalg.inv(covariance_cut_fit)
+
+            test1 = abs(np.dot(covariance_cut_fit, covariance_cut_fit_inv) - np.identity(covariance_cut_fit.shape[0]))
+            test2 = abs(np.dot(covariance_cut_fit_inv, covariance_cut_fit) - np.identity(covariance_cut_fit.shape[0]))
+
+            if test1.max() > MatrixInverseTolerance or test2.max() > MatrixInverseTolerance:
+                print '-- region {tag}: test1 max value = {t1}, test2 max value = {t2}'.format(tag=tag, t1=test1.max(), t2=test2.max())
+                raise RuntimeError
+
+            self.data_fit_inv_covs[tag] = covariance_cut_fit_inv
 
         # cut covariance matrix down only to those values used in renormalization
         # (notice we do this *before* inversion)
@@ -203,17 +246,41 @@ class HaloEFT_core(object):
 
         # store inverse covariance matrix
         w, p = np.linalg.eig(covariance_cut_ren)
-        if not np.all(w > 0):
+        # print '-- region {tag} ren -covariance matrix eigenvalue hierarchy = {e}'.format(tag=tag, e=np.min(w)/np.max(w))
+        if not np.all(w > 0) or np.min(w)/np.max(w) < ConditionNumberTolerance:
 
-            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive
-            print 'using pseudo-inverse covariance matrix for "ren" group in region {tag}'.format(tag=tag)
-            self.data_ren_inv_covs[tag] = np.linalg.pinv(covariance_cut_ren)
+            # use Moore-Penrose pseudoinverse if not all eigenvalues are positive, or condition number is large
+            print '-- region {tag}: using pseudo-inverse covariance matrix for "ren" group'.format(tag=tag)
+            covariance_cut_ren_inv = np.linalg.pinv(covariance_cut_ren)
+
+            test1 = abs(np.dot(covariance_cut_ren, covariance_cut_ren_inv) - np.identity(covariance_cut_ren.shape[0]))
+            test2 = abs(np.dot(covariance_cut_ren_inv, covariance_cut_ren) - np.identity(covariance_cut_ren.shape[0]))
+
+            if test1.max() > MatrixInverseTolerance or test2.max() > MatrixInverseTolerance:
+                print '-- region {tag}: test1 max value = {t1}, test2 max value = {t2}'.format(tag=tag, t1=test1.max(), t2=test2.max())
+                raise RuntimeError
+
+            self.data_ren_inv_covs[tag] = covariance_cut_ren_inv
 
         else:
 
-            self.data_ren_inv_covs[tag] = np.linalg.inv(covariance_cut_ren)
+            covariance_cut_ren_inv = np.linalg.inv(covariance_cut_ren)
+
+            test1 = abs(np.dot(covariance_cut_ren, covariance_cut_ren_inv) - np.identity(covariance_cut_ren.shape[0]))
+            test2 = abs(np.dot(covariance_cut_ren_inv, covariance_cut_ren) - np.identity(covariance_cut_ren.shape[0]))
+
+            if test1.max() > MatrixInverseTolerance or test2.max() > MatrixInverseTolerance:
+                print '-- region {tag}: test1 max value = {t1}, test2 max value = {t2}'.format(tag=tag, t1=test1.max(), t2=test2.max())
+                raise RuntimeError
+
+            self.data_ren_inv_covs[tag] = covariance_cut_ren_inv
 
         # store convolution matrix
+        if np.any(abs(convolution) > ConvCeiling):
+
+            print '!! region {tag}: convolution matrix contains very large element = {v}'.format(tag=tag, v=abs(convolution).max())
+            raise RuntimeError
+
         self.data_convs[tag] = convolution
 
 

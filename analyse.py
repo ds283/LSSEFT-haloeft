@@ -7,9 +7,15 @@ from getdist import plots as gdp
 import haloeft as heft
 
 
+PconvCeiling=1E6
+
+
 class EFT_tools(heft.HaloEFT_core):
 
-    def __init__(self, realization, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
+    def __init__(self, realization, model_name, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
+
+        self.realization = realization
+        self.model_name = model_name
 
         # use a dictionary to mimic the CosmoSIS datablock API
         config = {}
@@ -62,6 +68,20 @@ class EFT_tools(heft.HaloEFT_core):
         # notice the mask is for just one P_ell individually, not the concatenated group (P0, P2, P4)
         i_mask = np.array([False for i in xrange(len(self.WiggleZ_mean_ks))])
 
+        convolved_Pk = {}
+        # cache convolved theory power spectra
+        for r in self.data_regions:
+
+            Pconv = np.dot(self.data_convs[r], P)
+
+            if np.any(abs(Pconv) > PconvCeiling):
+                print '!! region {tag}: Pconv very large: largest value = {l}, P.max = {P}, conv.max = {c}'.format(
+                    tag=r, l=abs(Pconv).max(), P=abs(P).max(), c=abs(self.data_convs[r]).max())
+                print Pconv
+                raise RuntimeError
+
+            convolved_Pk[r] = Pconv[self.conv_to_means_mask]
+
         # step through each available sample point
         for i in xrange(len(i_mask)):
 
@@ -78,18 +98,14 @@ class EFT_tools(heft.HaloEFT_core):
                 chisq = 0.0
 
                 # loop over all data regions:
-                for region in self.data_regions:
+                for r in self.data_regions:
 
                     # extract data products for this region
-                    means = self.data_fit_means[region]
-                    inv_cov = self.data_fit_inv_covs[region]
-                    conv = self.data_convs[region]
-
-                    # convolve theory prediction with convolution matrix
-                    Pconv = np.dot(conv, P)
+                    means = self.data_fit_means[r]
+                    inv_cov = self.data_fit_inv_covs[r]
 
                     # cut raw region used in fit (ie. from 0.01 to 0.29) out of full convolved vector
-                    Ptheory = Pconv[self.conv_to_means_mask]
+                    Ptheory = convolved_Pk[r]
 
                     # cut down to just the k-sample points we are using here
                     Ptheory_cut = Ptheory[i_mask_full]
@@ -113,12 +129,17 @@ class EFT_tools(heft.HaloEFT_core):
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
         P = np.concatenate( (P0, P2, P4) )
 
+        # compute total chi-square value
+        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'fit') for region in self.data_regions])
+        total_chisq = -2.0 * lik
+
         with open(plot_file, 'w') as f:
 
-            print 'generating theory + data fit comparison file "{f}"'.format(f=plot_file)
+            print ':: generating theory + data fit comparison file "{f}"'.format(f=plot_file)
 
             # add labels for global columns
-            labels = ['k', 'P0', 'P2', 'P4',
+            labels = ['ireal', 'chisq', 'model',
+                      'k', 'P0', 'P2', 'P4',
                       'P0_theory_avg', 'P2_theory_avg', 'P4_theory_avg',
                       'P0_WizCOLA_avg', 'P2_WizCOLA_avg', 'P4_WizCOLA_avg',
                       'P0_WizCOLA_err_avg', 'P2_WizCOLA_err_avg', 'P4_WizCOLA_err_avg',
@@ -136,11 +157,30 @@ class EFT_tools(heft.HaloEFT_core):
             writer = csv.DictWriter(f, labels, restval='MISSING')
             writer.writeheader()
 
+            convolved_Pk = {}
+            # cache convolved theory power spectra
+            for r in self.data_regions:
+
+                Pconv = np.dot(self.data_convs[r], P)
+
+                if np.any(abs(Pconv) > PconvCeiling):
+                    print '!! region {tag}: Pconv very large: largest value = {l}, P.max = {P}, conv.max = {c}'.format(
+                        tag=r, l=abs(Pconv).max(), P=abs(P).max(), c=abs(self.data_convs[r]).max())
+                    print Pconv
+                    raise RuntimeError
+
+                convolved_Pk[r] = Pconv
+
             # loop over each k sample point to be included in the analysis,
             # and then process its contribution for each region
             for i in xrange(len(self.WiggleZ_mean_ks)):
 
                 row = {'k': self.WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
+
+                if i == 0:
+                    row.update({'ireal': self.realization, 'chisq': total_chisq, 'model': self.model_name})
+                else:
+                    row.update({'ireal': -99, 'chisq': -99, 'model': '-'})
 
                 # initialize accumulators used to sum over all regions
                 P0_theory_tot = 0
@@ -164,10 +204,11 @@ class EFT_tools(heft.HaloEFT_core):
 
                     means = self.data_raw_means[r]
                     variances = self.data_raw_variance[r]
-                    conv = self.data_convs[r]
 
-                    Pconv = np.dot(conv, P)
+                    # read previously cached convolved power spectra
+                    Pconv = convolved_Pk[r]
 
+                    # pick out P0, P2, P4 values for this k-sample point
                     P0_theory = Pconv[0 * self.nbinc + i]
                     P2_theory = Pconv[1 * self.nbinc + i]
                     P4_theory = Pconv[2 * self.nbinc + i]
@@ -188,9 +229,9 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_delta = P2_data - P2_theory
                     P4_delta = P4_data - P4_theory
 
-                    row.update({r+'_P0_Delta': P0_delta})
-                    row.update({r+'_P2_Delta': P2_delta})
-                    row.update({r+'_P4_Delta': P4_delta})
+                    row.update({r + '_P0_Delta': P0_delta})
+                    row.update({r + '_P2_Delta': P2_delta})
+                    row.update({r + '_P4_Delta': P4_delta})
 
                     P0_theory_tot += P0_theory
                     P2_theory_tot += P2_theory
@@ -228,7 +269,7 @@ class EFT_tools(heft.HaloEFT_core):
 
 class analyse_core(object):
 
-    def __init__(self, r, p, mp, glb):
+    def __init__(self, r, mn, p, mp, glb):
 
         self.realization = r
         self.params = p
@@ -236,7 +277,7 @@ class analyse_core(object):
         self.make_params = mp
         self.get_linear_bias = glb
 
-        self.tools = EFT_tools(r)
+        self.tools = EFT_tools(r, mn)
 
 
     def get_params(self):
@@ -267,11 +308,11 @@ class analyse_core(object):
         return chisq
 
 
-class analyse_emcee(analyse_core):
+class analyse_CosmoSIS(analyse_core):
 
-    def __init__(self, r, p, emcee_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, r, mn, p, emcee_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
 
-        super(analyse_emcee, self).__init__(r, p, make_params, get_linear_bias)
+        super(analyse_CosmoSIS, self).__init__(r, mn, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
         mixing_folder = os.path.join('plots', 'mixing')
@@ -307,7 +348,7 @@ class analyse_emcee(analyse_core):
         # generate GetDist .paramnames file if it does not already exist
         if not os.path.exists(getdist_param_file):
 
-            print 'generating GetDist .paramnames file "{f}"'.format(f=getdist_param_file)
+            print ':: generating GetDist .paramnames file "{f}"'.format(f=getdist_param_file)
 
             with open(getdist_param_file, 'w') as g:
 
@@ -325,7 +366,7 @@ class analyse_emcee(analyse_core):
 
         else:
 
-            print 'GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=getdist_param_file)
+            print ':: GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=getdist_param_file)
 
 
         # generate GetDist-compatible chain file from emcee output, if it does not already exist
@@ -333,7 +374,7 @@ class analyse_emcee(analyse_core):
 
         if not os.path.exists(getdist_chain_file):
 
-            print 'converting emcee chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
+            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
 
             # note p.keys() must return a list that is ordered in the correct way
             input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
@@ -360,7 +401,7 @@ class analyse_emcee(analyse_core):
 
         else:
 
-            print 'GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_chain_file)
+            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_chain_file)
 
 
         # IMPORT CONVERTED CHAIN FILES USING GETDIST
@@ -371,7 +412,7 @@ class analyse_emcee(analyse_core):
 
         if mixing_plot is not None:
 
-            print 'generating triangle plot for mixing counterterms'
+            print ':: generating triangle plot for mixing counterterms'
 
             g = gdp.getSubplotPlotter()
             g.triangle_plot(self.__samples, mixing_plot, shaded=True)
@@ -379,7 +420,7 @@ class analyse_emcee(analyse_core):
 
         if stochastic_plot is not None:
 
-            print 'generating triangle plot for stochastic counterterms'
+            print ':: generating triangle plot for stochastic counterterms'
 
             h = gdp.getSubplotPlotter()
             h.triangle_plot(self.__samples, stochastic_plot, shaded=True)
@@ -409,9 +450,9 @@ class analyse_emcee(analyse_core):
 
 class analyse_maxlike(analyse_core):
 
-    def __init__(self, r, p, maxlike_file, make_params, get_linear_bias):
+    def __init__(self, r, mn, p, maxlike_file, make_params, get_linear_bias):
 
-        super(analyse_maxlike, self).__init__(r, p, make_params, get_linear_bias)
+        super(analyse_maxlike, self).__init__(r, mn, p, make_params, get_linear_bias)
 
         # construct hierarchy of plot folders
         plot_folder = os.path.join('plots')
@@ -467,7 +508,7 @@ def write_summary(realizations, out_file):
 
     with open(getdist_param_file, 'w') as f:
 
-        print 'generating GetDist-format chain summary .paramnames "{f}"'.format(f=getdist_param_file)
+        print ':: generating GetDist-format chain summary .paramnames "{f}"'.format(f=getdist_param_file)
 
         writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t', restval='MISSING')
 
@@ -498,7 +539,7 @@ def write_summary(realizations, out_file):
 
     with open(getdist_chain_file, 'w') as f:
 
-        print 'generating GetDist-format chain summary file "{f}"'.format(f=getdist_chain_file)
+        print ':: generating GetDist-format chain summary file "{f}"'.format(f=getdist_chain_file)
 
         columns = ['weight', 'like'] + list(params.keys()) + \
                   ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'] + \

@@ -1,9 +1,11 @@
 import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
+import traceback
 import full_params as param_tools
 
 tag = 'full'
+model_name = 'Time-nonlocal'
 
 params = OrderedDict([('b1_1', 'b_1^{(1)}'), ('b1_2', 'b_1^{(2)}'), ('b1_3', 'b_1^{(3)}'),
                       ('b2_2', 'b_2^{(2)}'), ('bG2_2', 'b_{G_2}^{(2)}'), ('bG2_3', 'b_{G_2}^{(3)}')])
@@ -27,9 +29,23 @@ stochastic_params = None
 
 def f(tag):
 
-    return asy.analyse_emcee(numbers[tag], params, inputs[tag], outputs[tag],
-                             param_tools.make_params, param_tools.get_linear_bias,
-                             mixing_params, stochastic_params)
+    try:
+
+        obj = asy.analyse_CosmoSIS(numbers[tag], model_name, params, inputs[tag], outputs[tag],
+                                   param_tools.make_params, param_tools.get_linear_bias,
+                                   mixing_params, stochastic_params)
+
+    except Exception as e:
+
+        print 'Caught exception in worker thread'
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        traceback.print_exc()
+
+        raise e
+
+    return obj
 
 
 if __name__ == '__main__':
@@ -42,6 +58,8 @@ if __name__ == '__main__':
 
         label = regions[n]
         list[label] = r
+
+    p.close()
 
     asy.write_summary(list, tag+'_ensemble')
     asy.write_Pell(list, tag+'_ensemble')
