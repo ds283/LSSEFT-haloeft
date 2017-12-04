@@ -126,13 +126,14 @@ class EFT_tools(heft.HaloEFT_core):
 
             # supplement with labels for per-region columns
             for r in self.data_regions:
+
                 labels += [r + '_P0_theory', r + '_P2_theory', r + '_P4_theory',
                            r + '_P0_WizCOLA', r + '_P2_WizCOLA', r + '_P4_WizCOLA',
                            r + '_P0_WizCOLA_err', r + '_P2_WizCOLA_err', r + '_P4_WizCOLA_err',
                            r + '_P0_Delta', r + '_P2_Delta', r + '_P4_Delta']
 
             # open a CSV writer for these columns and emit a header
-            writer = csv.DictWriter(f, labels)
+            writer = csv.DictWriter(f, labels, restval='MISSING')
             writer.writeheader()
 
             # loop over each k sample point to be included in the analysis,
@@ -179,9 +180,9 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_data_var = variances[1 * self.nbin + i]
                     P4_data_var = variances[2 * self.nbin + i]
 
-                    row.update({r+'_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data, r + '_P0_WizCOLA_err': np.sqrt(P0_data_var)})
-                    row.update({r+'_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data, r + '_P2_WizCOLA_err': np.sqrt(P2_data_var)})
-                    row.update({r+'_P4_theory': P4_theory, r + '_P4_WizCOLA': P4_data, r + '_P4_WizCOLA_err': np.sqrt(P4_data_var)})
+                    row.update({r + '_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data, r + '_P0_WizCOLA_err': np.sqrt(P0_data_var)})
+                    row.update({r + '_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data, r + '_P2_WizCOLA_err': np.sqrt(P2_data_var)})
+                    row.update({r + '_P4_theory': P4_theory, r + '_P4_WizCOLA': P4_data, r + '_P4_WizCOLA_err': np.sqrt(P4_data_var)})
 
                     P0_delta = P0_data - P0_theory
                     P2_delta = P2_data - P2_theory
@@ -310,7 +311,7 @@ class analyse_emcee(analyse_core):
 
             with open(getdist_param_file, 'w') as g:
 
-                writer = csv.DictWriter(g, ['name', 'LaTeX'], delimiter='\t')
+                writer = csv.DictWriter(g, ['name', 'LaTeX'], delimiter='\t', restval='MISSING')
 
                 for par in p:
                     writer.writerow({'name': par, 'LaTeX': p[par]})
@@ -342,7 +343,7 @@ class analyse_emcee(analyse_core):
 
             with open(getdist_chain_file, 'w') as g:
 
-                writer = csv.DictWriter(g, output_columns, delimiter='\t')
+                writer = csv.DictWriter(g, output_columns, delimiter='\t', restval='MISSING')
 
                 for row in table:
 
@@ -468,7 +469,7 @@ def write_summary(realizations, out_file):
 
         print 'generating GetDist-format chain summary .paramnames "{f}"'.format(f=getdist_param_file)
 
-        writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t')
+        writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t', restval='MISSING')
 
         for p in params:
             writer.writerow({'name': p, 'LaTeX': params[p]})
@@ -503,7 +504,7 @@ def write_summary(realizations, out_file):
                   ['c0', 'c2', 'c4', 'd1', 'd2', 'd3'] + \
                   ['0.03', '0.05', '0.07', '0.09', '0.11', '0.13', '0.15', '0.17', '0.19', '0.21', '0.23', '0.25', '0.27', '0.29']
 
-        writer = csv.DictWriter(f, columns, delimiter='\t')
+        writer = csv.DictWriter(f, columns, delimiter='\t', restval='MISSING')
 
         for real in realizations:
 
