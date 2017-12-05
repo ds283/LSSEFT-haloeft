@@ -310,7 +310,7 @@ class analyse_core(object):
 
 class analyse_CosmoSIS(analyse_core):
 
-    def __init__(self, r, mn, p, emcee_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, r, mn, p, CosmoSIS_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
 
         super(analyse_CosmoSIS, self).__init__(r, mn, p, make_params, get_linear_bias)
 
@@ -343,7 +343,7 @@ class analyse_CosmoSIS(analyse_core):
         triangle_stochastic_file = os.path.join(stochastic_folder, out_file + '.png')
 
 
-        # CONVERT EMCEE FILES TO GETDIST FORMAT
+        # CONVERT COSMOSIS FILES TO GETDIST FORMAT
 
         # generate GetDist .paramnames file if it does not already exist
         if not os.path.exists(getdist_param_file):
@@ -369,18 +369,18 @@ class analyse_CosmoSIS(analyse_core):
             print ':: GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=getdist_param_file)
 
 
-        # generate GetDist-compatible chain file from emcee output, if it does not already exist
-        emcee_path = os.path.join('output', emcee_file)
+        # generate GetDist-compatible chain file from CosmoSIS output, if it does not already exist
+        CosmoSIS_path = os.path.join('output', CosmoSIS_file)
 
         if not os.path.exists(getdist_chain_file):
 
-            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=emcee_path, o=getdist_chain_file)
+            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=CosmoSIS_path, o=getdist_chain_file)
 
             # note p.keys() must return a list that is ordered in the correct way
             input_columns = list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3', 'like']
             output_columns = ['weight', 'like'] + list(p.keys()) + ['c0', 'c2', 'c4', 'd1', 'd2', 'd3']
 
-            table = ascii.read(emcee_path, Reader=ascii.NoHeader, names=input_columns)
+            table = ascii.read(CosmoSIS_path, Reader=ascii.NoHeader, names=input_columns)
 
             with open(getdist_chain_file, 'w') as g:
 
@@ -401,7 +401,7 @@ class analyse_CosmoSIS(analyse_core):
 
         else:
 
-            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=emcee_path, o=getdist_chain_file)
+            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=CosmoSIS_path, o=getdist_chain_file)
 
 
         # IMPORT CONVERTED CHAIN FILES USING GETDIST
