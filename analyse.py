@@ -297,8 +297,8 @@ class analyse_core(object):
         tools = self.tools
 
         param_dict = self.make_params(ps)
-        coeffs = tools.make_coeffs(param_dict)
-        tools.add_counterterms(coeffs, ps, self.get_linear_bias(ps))
+        coeffs = tools.make_coeff_dict(param_dict)
+        tools.add_counterterms_to_coeff_dict(coeffs, ps, self.get_linear_bias(ps))
 
         P0, P2, P4 = tools.build_theory_P_ell(coeffs)
         lik = sum([tools.compute_likelihood(region, P0, P2, P4, 'fit') for region in tools.data_regions])
@@ -555,8 +555,8 @@ def write_summary(realizations, out_file):
             tools = rlz.get_tools()
 
             param_dict = rlz.make_params(row)
-            coeffs = tools.make_coeffs(param_dict)
-            tools.add_counterterms(coeffs, row, rlz.get_linear_bias(row))
+            coeffs = tools.make_coeff_dict(param_dict)
+            tools.add_counterterms_to_coeff_dict(coeffs, row, rlz.get_linear_bias(row))
 
             deviations = tools.compute_chisq_variation(coeffs)
 
@@ -578,7 +578,7 @@ def write_Pell(list, out_file):
         tools = rlz.get_tools()
 
         params = rlz.make_params(bestfit)
-        coeffs = tools.make_coeffs(params)
-        tools.add_counterterms(coeffs, bestfit, rlz.get_linear_bias(bestfit))
+        coeffs = tools.make_coeff_dict(params)
+        tools.add_counterterms_to_coeff_dict(coeffs, bestfit, rlz.get_linear_bias(bestfit))
 
         tools.make_summary_plot(p, coeffs)

@@ -434,7 +434,7 @@ class HaloEFT_core(object):
         self.__f = flist[0]
 
 
-    def make_coeffs(self, params):
+    def make_coeff_dict(self, params):
 
         # extract parameters
         b1_1 = params['b1_1']
@@ -480,7 +480,7 @@ class HaloEFT_core(object):
         return coeffs
 
 
-    def add_counterterms(self, coeffs, values, blinear):
+    def add_counterterms_to_coeff_dict(self, coeffs, values, blinear):
 
         fb = self.__f / blinear
 
@@ -506,13 +506,13 @@ class HaloEFT_core(object):
 
     def compute(self, block, params, blinear, likes):
 
-        coeffs = self.make_coeffs(params)
+        coeffs = self.make_coeff_dict(params)
 
         # compute EFT counterterms
         # note this will update coeffs with the values of counterterms during the optimization process,
         # but these will be overwritten with the bestfit values immediately below
         values = self.__compute_EFT_counterterms(coeffs, blinear)
-        self.add_counterterms(coeffs, values, blinear)
+        self.add_counterterms_to_coeff_dict(coeffs, values, blinear)
 
         # build theoretical P_ell with these counterterms
         P0, P2, P4 = self.build_theory_P_ell(coeffs)
