@@ -143,6 +143,8 @@ class EFT_tools(heft.HaloEFT_core):
                       'P0_theory_avg', 'P2_theory_avg', 'P4_theory_avg',
                       'P0_WizCOLA_avg', 'P2_WizCOLA_avg', 'P4_WizCOLA_avg',
                       'P0_WizCOLA_err_avg', 'P2_WizCOLA_err_avg', 'P4_WizCOLA_err_avg',
+                      'P0_ensemble_avg', 'P2_ensemble_avg', 'P4_ensemble_avg',
+                      'P0_ensemble_err_avg', 'P2_ensemble_err_avg', 'P4_ensemble_err_avg',
                       'P0_Delta_avg', 'P2_Delta_avg', 'P4_Delta_avg']
 
             # supplement with labels for per-region columns
@@ -191,9 +193,17 @@ class EFT_tools(heft.HaloEFT_core):
                 P2_WizCOLA_tot = 0
                 P4_WizCOLA_tot = 0
 
+                P0_ensemble_tot = 0
+                P2_ensemble_tot = 0
+                P4_ensemble_tot = 0
+
                 P0_WizCOLA_var_tot = 0
                 P2_WizCOLA_var_tot = 0
                 P4_WizCOLA_var_tot = 0
+
+                P0_ensemble_var_tot = 0
+                P2_ensemble_var_tot = 0
+                P4_ensemble_var_tot = 0
 
                 P0_Delta_tot = 0
                 P2_Delta_tot = 0
@@ -204,6 +214,9 @@ class EFT_tools(heft.HaloEFT_core):
 
                     means = self.data_raw_means[r]
                     variances = self.data_raw_variance[r]
+
+                    ensemble_means = self.data_ensemble_means[r]
+                    ensemble_variances = self.data_ensemble_variance[r]
 
                     # read previously cached convolved power spectra
                     Pconv = convolved_Pk[r]
@@ -217,9 +230,17 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_data = means[1 * self.nbin + i]
                     P4_data = means[2 * self.nbin + i]
 
+                    P0_ensemble = ensemble_means[0 * self.nbin + i]
+                    P2_ensemble = ensemble_means[1 * self.nbin + i]
+                    P4_ensemble = ensemble_means[2 * self.nbin + i]
+
                     P0_data_var = variances[0 * self.nbin + i]
                     P2_data_var = variances[1 * self.nbin + i]
                     P4_data_var = variances[2 * self.nbin + i]
+
+                    P0_ensemble_var = ensemble_variances[0 * self.nbin + i]
+                    P2_ensemble_var = ensemble_variances[1 * self.nbin + i]
+                    P4_ensemble_var = ensemble_variances[2 * self.nbin + i]
 
                     row.update({r + '_P0_theory': P0_theory, r + '_P0_WizCOLA': P0_data, r + '_P0_WizCOLA_err': np.sqrt(P0_data_var)})
                     row.update({r + '_P2_theory': P2_theory, r + '_P2_WizCOLA': P2_data, r + '_P2_WizCOLA_err': np.sqrt(P2_data_var)})
@@ -241,9 +262,17 @@ class EFT_tools(heft.HaloEFT_core):
                     P2_WizCOLA_tot += P2_data
                     P4_WizCOLA_tot += P4_data
 
+                    P0_ensemble_tot += P0_ensemble
+                    P2_ensemble_tot += P2_ensemble
+                    P4_ensemble_tot += P4_ensemble
+
                     P0_WizCOLA_var_tot += P0_data_var
                     P2_WizCOLA_var_tot += P2_data_var
                     P4_WizCOLA_var_tot += P4_data_var
+
+                    P0_ensemble_var_tot += P0_ensemble_var
+                    P2_ensemble_var_tot += P2_ensemble_var
+                    P4_ensemble_var_tot += P4_ensemble_var
 
                     P0_Delta_tot += P0_delta
                     P2_Delta_tot += P2_delta
@@ -257,9 +286,15 @@ class EFT_tools(heft.HaloEFT_core):
                             'P0_WizCOLA_avg': P0_WizCOLA_tot/regions,
                             'P2_WizCOLA_avg': P2_WizCOLA_tot/regions,
                             'P4_WizCOLA_avg': P4_WizCOLA_tot/regions,
-                            'P0_WizCOLA_err_avg': np.sqrt(P0_WizCOLA_var_tot/regions**2),
-                            'P2_WizCOLA_err_avg': np.sqrt(P2_WizCOLA_var_tot/regions**2),
-                            'P4_WizCOLA_err_avg': np.sqrt(P4_WizCOLA_var_tot/regions**2),
+                            'P0_WizCOLA_err_avg': np.sqrt(P0_WizCOLA_var_tot)/regions,
+                            'P2_WizCOLA_err_avg': np.sqrt(P2_WizCOLA_var_tot)/regions,
+                            'P4_WizCOLA_err_avg': np.sqrt(P4_WizCOLA_var_tot)/regions,
+                            'P0_ensemble_avg': P0_ensemble_tot/regions,
+                            'P2_ensemble_avg': P2_ensemble_tot/regions,
+                            'P4_ensemble_avg': P4_ensemble_tot/regions,
+                            'P0_ensemble_err_avg': np.sqrt(P0_ensemble_var_tot)/regions,
+                            'P2_ensemble_err_avg': np.sqrt(P2_ensemble_var_tot)/regions,
+                            'P4_ensemble_err_avg': np.sqrt(P4_ensemble_var_tot)/regions,
                             'P0_Delta_avg': P0_Delta_tot/regions,
                             'P2_Delta_avg': P2_Delta_tot/regions,
                             'P4_Delta_avg': P4_Delta_tot/regions})

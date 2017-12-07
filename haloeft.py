@@ -174,11 +174,15 @@ class HaloEFT_core(object):
         # 4. Measurement errors on the power spectrum mean value
         self.data_raw_variance = {}
 
-        # 4. Convolution matrix taking theory outputs to each WiggleZ region
+        # 5. Ensemble average measurements, per region
+        self.data_ensemble_means = {}
+        self.data_ensemble_variance = {}
+
+        # 6. Convolution matrix taking theory outputs to each WiggleZ region
         # (eg. accounts for geometry and selection function)
         self.data_convs = {}
 
-        # 5. Region labels
+        # 7. Region labels
         self.data_regions = ['1h', '3h', '9h', '11h', '15h', '22h']
 
         # perform import
@@ -214,11 +218,8 @@ class HaloEFT_core(object):
         # get list of all realizations
         all_realizations = mean_by_ireal.groups.keys['ireal']
 
-        # generate mask that will strip out just the intended realization
-        realization_mask = all_realizations == realization
-
         # use mask to extract Pk means for just this realization
-        mean_this_realization = mean_by_ireal.groups[realization_mask]
+        mean_this_realization = mean_by_ireal.groups[realization]
 
         # sort into ascending order of k
         mean_this_realization.sort('k')
@@ -231,7 +232,7 @@ class HaloEFT_core(object):
         # concatenate these arrays to form a single block consisting of P0 values followed by P2, P4 values
         Pblock = np.concatenate((this_P0, this_P2, this_P4))
 
-        # extract relevant components -- 'raw' is everthing, but 'fit' and 'ren' use only a subset of values
+        # extract relevant components -- 'raw' is everything, but 'fit' and 'ren' use only a subset of values
         self.data_raw_means[tag] = Pblock
         self.data_fit_means[tag] = Pblock[self.mean_fit_mask]
         self.data_ren_means[tag] = Pblock[self.__mean_ren_mask]
@@ -247,7 +248,8 @@ class HaloEFT_core(object):
 
 
         # strip out diagonal entries of covariance matrix as error estimates
-        self.data_raw_variance[tag] = np.diagonal(covariance)
+        variances = np.diagonal(covariance)
+        self.data_raw_variance[tag] = variances
 
 
         # cut covariance matrix down only to those values used in the likelihood fit
@@ -273,6 +275,20 @@ class HaloEFT_core(object):
             raise RuntimeError
 
         self.data_convs[tag] = convolution
+
+
+        # extract ensemble average power spectrum for this region, which is stored as realization 0
+        ensemble_means = mean_by_ireal.groups[0]
+        ensemble_means.sort('k')
+
+        ensemble_P0 = np.asarray(ensemble_means['P0'])
+        ensemble_P2 = np.asarray(ensemble_means['P2'])
+        ensemble_P4 = np.asarray(ensemble_means['P4'])
+
+        ensemble_Pk = np.concatenate((ensemble_P0, ensemble_P2, ensemble_P4))
+
+        self.data_ensemble_means[tag] = ensemble_Pk
+        self.data_ensemble_variance[tag] = variances / (len(all_realizations)-1.0)
 
 
     def __import_theory(self, tables, counterterms, db, my_config):
