@@ -5,7 +5,7 @@ from scipy import optimize
 
 class cosmosis_pipeline(object):
 
-    def __init__(self, my_config, my_name, data, theory):
+    def __init__(self, my_name, data, theory):
 
         self.__mod_name = my_name
 

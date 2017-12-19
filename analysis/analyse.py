@@ -64,7 +64,7 @@ class EFT_tools(heft.cosmosis_pipeline):
         theory = EFT.EFT_products(config, ks)
 
         # pass configuration to base class
-        super(EFT_tools, self).__init__(config, 'EFT_Analyse', data, theory)
+        super(EFT_tools, self).__init__('EFT_Analyse', data, theory)
 
 
     def compute_chisq_variation(self, coeffs):

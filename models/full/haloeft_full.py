@@ -25,7 +25,7 @@ class HaloEFT(heft.cosmosis_pipeline):
         theory = EFT.EFT_products(my_config, ks)
 
         # call base class constructor
-        super(HaloEFT, self).__init__(my_config, my_name, data, theory)
+        super(HaloEFT, self).__init__(my_name, data, theory)
 
 
     def execute(self, block):
