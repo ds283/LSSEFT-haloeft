@@ -6,7 +6,7 @@ import haloeft as heft
 import WizCOLA
 import EFT
 
-import lag_params as lag
+import params as lag
 
 
 class HaloEFT(heft.cosmosis_pipeline):
