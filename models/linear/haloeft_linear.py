@@ -3,7 +3,7 @@ from cosmosis.datablock import names as section_names
 
 import haloeft as heft
 
-import WiggleZ
+import WizCOLA
 import EFT
 
 import linear_params as lin
@@ -15,11 +15,11 @@ class HaloEFT(heft.HaloEFT_core):
 
     def __init__(self, my_config, my_name):
 
-        # set up container of k-samples for WiggleZ
-        ks = WiggleZ.WiggleZ_ksamples(my_config)
+        # set up container of k-samples for WizCOLA
+        ks = WizCOLA.ksamples(my_config)
 
         # build data container
-        data = WiggleZ.WizCOLA_products(my_config, ks)
+        data = WizCOLA.products(my_config, ks)
 
         # build theory container
         theory = EFT.EFT_products(my_config, ks)

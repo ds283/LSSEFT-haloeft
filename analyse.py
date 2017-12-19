@@ -7,7 +7,7 @@ from getdist import plots as gdp
 
 import haloeft as heft
 
-import WiggleZ
+import WizCOLA
 import EFT
 
 PconvCeiling=1E6
@@ -54,11 +54,11 @@ class EFT_tools(heft.HaloEFT_core):
         config["HaloEFT", "renormalize_kmin"] = ren_kmin
         config["HaloEFT", "renormalize_kmax"] = ren_kmax
 
-        # set up container of k-samples for WiggleZ
-        ks = WiggleZ.WiggleZ_ksamples(config)
+        # set up container of k-samples for WizCOLA
+        ks = WizCOLA.ksamples(config)
 
         # build data container
-        data = WiggleZ.WizCOLA_products(config, ks)
+        data = WizCOLA.products(config, ks)
 
         # build theory container
         theory = EFT.EFT_products(config, ks)

@@ -6,7 +6,7 @@ from utils import matrix as mtx
 
 
 # container class for WizCOLA data products
-class WizCOLA_products(object):
+class products(object):
 
     def __init__(self, my_config, k_sample):
 
@@ -56,7 +56,7 @@ class WizCOLA_products(object):
         self.ensemble_means = {}
         self.ensemble_variance = {}
 
-        # 6. Convolution matrix taking theory outputs to each WiggleZ region
+        # 6. Convolution matrix taking theory outputs to each WizCOLA region
         # (eg. accounts for geometry and selection function)
         self.convs = {}
 
@@ -80,7 +80,7 @@ class WizCOLA_products(object):
         # number of bins in convolution  matrix
         nbinc = self.k_sample.nbinc
 
-        # read in the WiggleZ data for this region as astropy.table.Table instances
+        # read in the WizCOLA data for this region as astropy.table.Table instances
         mean_table = ascii.read(means_file, Reader=ascii.NoHeader,
                                 names=['ireal', 'k', 'P0', 'P0err', 'P2', 'P2err', 'P4', 'P4err'])
 

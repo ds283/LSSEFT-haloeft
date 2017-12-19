@@ -2,7 +2,7 @@ import numpy as np
 
 
 # container class for k-sample points
-class WiggleZ_ksamples(object):
+class ksamples(object):
 
     def __init__(self, my_config):
 

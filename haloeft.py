@@ -148,7 +148,7 @@ class HaloEFT_core(object):
 
         conv = self.data.convs[region]
 
-        # first, convolve theory vector with WiggleZ convolution matrix for this region
+        # first, convolve theory vector with WizCOLA convolution matrix for this region
         P = np.concatenate( (P0, P2, P4) )
         Pconv = np.dot(conv, P)
 
