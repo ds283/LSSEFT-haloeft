@@ -6,7 +6,7 @@ import haloeft as heft
 import WizCOLA
 import EFT
 
-import coevo_params as coevo
+import params as coevo
 
 
 class HaloEFT(heft.cosmosis_pipeline):
