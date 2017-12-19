@@ -2,7 +2,7 @@ from analysis import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback
-import full_params as param_tools
+import params as param_tools
 
 tag = 'full'
 model_name = 'Time-nonlocal'
