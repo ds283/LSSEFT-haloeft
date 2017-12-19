@@ -1,14 +1,23 @@
-from analysis import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback
+
 import params as param_tools
+
+import WizCOLA
+import EFT
+import haloeft as heft
+
+from analysis import analyse as asy
+from analysis.config import make_config_block
+
 
 model_name = 'Linear'
 
 params = OrderedDict([('b1', 'b_1')])
 
-regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
+# regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
+regions = ['r01']
 
 numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
@@ -29,7 +38,14 @@ def f(tag):
 
     try:
 
-        obj = asy.analyse_CosmoSIS(numbers[tag], model_name, params, inputs[tag], outputs[tag],
+        config = make_config_block(numbers[tag])
+        ks = WizCOLA.ksamples(config)
+        data = WizCOLA.products(config, ks)
+        theory = EFT.theory(config, ks)
+
+        t = heft.tools(model_name, data, theory)
+
+        obj = asy.analyse_cosmosis(t, params, inputs[tag], outputs[tag],
                                    param_tools.make_params, param_tools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
@@ -59,5 +75,5 @@ if __name__ == '__main__':
 
     p.close()
 
-    asy.write_summary(list, 'ensemble')
-    asy.write_Pell(list, 'ensemble')
+    asy.write_summary(list, 'EFT_ensemble')
+    asy.write_Pell(list, 'EFT_ensemble')

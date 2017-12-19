@@ -1,8 +1,16 @@
-from analysis import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback
+
 import params as param_tools
+
+import WizCOLA
+import EFT
+import haloeft as heft
+
+from analysis import analyse as asy
+from analysis.config import make_config_block
+
 
 model_name = 'Coevolution'
 
@@ -29,7 +37,14 @@ def f(tag):
 
     try:
 
-        obj = asy.analyse_CosmoSIS(numbers[tag], model_name, params, inputs[tag], outputs[tag],
+        config = make_config_block(numbers[tag])
+        ks = WizCOLA.ksamples(config)
+        data = WizCOLA.products(config, ks)
+        theory = EFT.theory(config, ks)
+
+        t = heft.tools(model_name, data, theory)
+
+        obj = asy.analyse_cosmosis(t, params, inputs[tag], outputs[tag],
                                    param_tools.make_params, param_tools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
@@ -59,5 +74,5 @@ if __name__ == '__main__':
 
     p.close()
 
-    asy.write_summary(list, 'ensemble')
-    asy.write_Pell(list, 'ensemble')
+    asy.write_summary(list, 'EFT_ensemble')
+    asy.write_Pell(list, 'EFT_ensemble')

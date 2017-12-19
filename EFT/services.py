@@ -1,6 +1,7 @@
 import numpy as np
 
 import copy
+from collections import OrderedDict
 
 from scipy import optimize
 
@@ -14,6 +15,9 @@ class theory(object):
 
         # import theory data products into self.data
         self.data = database(my_config, k_sample)
+
+        self.parameters = OrderedDict([('c0', 'c_0'), ('c2', 'c_2'), ('c4', 'c_4'),
+                                       ('d1', 'd_1'), ('d2', 'd_2'), ('d3', 'd_3')])
 
 
     def build_theory_P_ell(self, coeffs, values, blinear):
@@ -43,7 +47,8 @@ class theory(object):
         # coeffs is updated with the values of the counterterms
         initial_counterterms = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
         res = optimize.minimize(self.__EFT_fit, initial_counterterms, method='Powell',
-                                args=(cs, blinear, LikelihoodAgent), options={'xtol': 1e-3, 'ftol': 1e-3, 'maxiter': 50000, 'maxfev': 50000})
+                                args=(cs, blinear, LikelihoodAgent),
+                                options={'xtol': 1e-3, 'ftol': 1e-3, 'maxiter': 50000, 'maxfev': 50000})
 
         if not res.success:
             raise RuntimeError(res.message)

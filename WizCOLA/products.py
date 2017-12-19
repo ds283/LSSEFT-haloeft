@@ -12,6 +12,9 @@ class products(object):
 
         self.k_sample = k_sample
 
+        # extract desired realization from datablock
+        self.__realization = my_config["HaloEFT", "realization"]
+
 
         # READ AND CACHE WIGGLEZ DATA PRODUCTS
 
@@ -71,9 +74,6 @@ class products(object):
 
     def __import_WiggleZ_data(self, tag, means_file, matrix_file, my_config):
 
-        # extract desired realization from datablock
-        realization = my_config["HaloEFT", "realization"]
-
         # number of bins in P_ell measurements and covariance matrix
         nbin = self.k_sample.nbin
 
@@ -97,7 +97,7 @@ class products(object):
         all_realizations = mean_by_ireal.groups.keys['ireal']
 
         # use mask to extract Pk means for just this realization
-        mean_this_realization = mean_by_ireal.groups[realization]
+        mean_this_realization = mean_by_ireal.groups[self.__realization]
 
         # sort into ascending order of k
         mean_this_realization.sort('k')
@@ -167,3 +167,9 @@ class products(object):
 
         self.ensemble_means[tag] = ensemble_Pk
         self.ensemble_variance[tag] = variances / (len(all_realizations) - 1.0)
+
+
+    def get_realization(self):
+
+        return self.__realization
+
