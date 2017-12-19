@@ -22,7 +22,7 @@ class linear_pipeline(heft.cosmosis_pipeline):
         data = WizCOLA.products(my_config, ks)
 
         # build theory container
-        theory = EFT.EFT_products(my_config, ks)
+        theory = EFT.theory(my_config, ks)
 
         # call base class constructor
         super(linear_pipeline, self).__init__(my_name, data, theory)

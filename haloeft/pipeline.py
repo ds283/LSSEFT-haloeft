@@ -1,7 +1,5 @@
 import numpy as np
 
-from scipy import optimize
-
 
 class cosmosis_pipeline(object):
 
@@ -59,77 +57,38 @@ class cosmosis_pipeline(object):
         return coeffs
 
 
-    def add_counterterms_to_coeff_dict(self, coeffs, values, blinear):
-
-        fb = self.theory.f / blinear
-
-        c0 = values['c0']
-        c2 = values['c2']
-        c4 = values['c4']
-        d1 = values['d1']
-        d2 = values['d2']
-        d3 = values['d3']
-
-        # OPE constrains coefficient of mu^6 counterterm
-        c6_ope = fb*c4 - fb*fb*c2 + fb*fb*fb*c0
-
-        # update coefficient dictionary with counterterm values
-        coeffs.update({'c0': c0 * blinear,
-                       'c2': c2 * blinear,
-                       'c4': c4 * blinear,
-                       'c6': c6_ope * blinear,
-                       'd1': d1,
-                       'd2': d2,
-                       'd3': d3})
-
-
     def compute(self, block, params, blinear, likes):
 
         coeffs = self.make_coeff_dict(params)
 
-        # compute EFT counterterms
-        # note this will update coeffs with the values of counterterms during the optimization process,
-        # but these will be overwritten with the bestfit values immediately below
-        values = self.__compute_EFT_counterterms(coeffs, blinear)
-        self.add_counterterms_to_coeff_dict(coeffs, values, blinear)
+        # Most models will depend on extra parameters beyond the bias model, such as EFT counterterms
+        # or the velocity dispersion in a Gaussian FoG mode, which we may want to optimize.
+        # The theory bundle provides a compute_model_parameters() method for this purpose
+        values = self.theory.compute_model_parameters(coeffs, blinear, self)
 
-        # build theoretical P_ell with these counterterms
-        P0, P2, P4 = self.build_theory_P_ell(coeffs)
+        # build theoretical P_ell with these bias coefficients and model values
+        P0, P2, P4 = self.theory.build_theory_P_ell(coeffs, values, blinear)
 
         # sum likelihood over all regions and store back into the datablock
-        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'fit') for region in self.data.regions])
-        block[likes, 'HALOEFT_LIKE'] = lik
+        block[likes, 'HALOEFT_LIKE'] = self.compute_likelihood(P0, P2, P4, type='fit')
 
-
-        # store derived EFT parameters for output with the rest of the chain
-        block['counterterms', 'c0'] = values['c0']
-        block['counterterms', 'c2'] = values['c2']
-        block['counterterms', 'c4'] = values['c4']
-
-        block['counterterms', 'd1'] = values['d1']
-        block['counterterms', 'd2'] = values['d2']
-        block['counterterms', 'd3'] = values['d3']
+        # store derived model parameters for output with the rest of the chain
+        for p in values:
+            block['counterterms', p] = values[p]
 
         return 0
 
 
-    def build_theory_P_ell(self, coeffs):
+    def compute_likelihood(self, P0, P2, P4, type='fit'):
 
-        # construct P_ell, including mixing counterterms and stochastic counterterms
+        lik = sum([self.__compute_region_likelihood(region, P0, P2, P4, type) for region in self.data.regions])
 
-        # this implementation is a bit cryptic but has been tuned for speed -- this is the rate-limiting
-        # step in an MCMC analysis
-        zip = [ coeffs[key] * data for key, data in self.theory.payload.iteritems() ]
-
-        P = zip[0].copy()
-        for a in zip[1:]:
-            P += a              # in-place addition is fastest
-
-        return P[0], P[1], P[2]
+        return lik
 
 
-    def compute_likelihood(self, region, P0, P2, P4, type='fit'):
+    def __compute_region_likelihood(self, region, P0, P2, P4, type='fit'):
 
+        # set up an appropriate
         if type is 'fit':
             mask = self.data.k_sample.conv_fit_mask
             means = self.data.fit_means[region]
@@ -151,49 +110,6 @@ class cosmosis_pipeline(object):
         # compute chi^2
         Delta = Ptheory - means
         return -np.dot(np.dot(Delta, inv_cov), Delta) / 2.0
-
-
-    def __compute_EFT_counterterms(self, coeffs, blinear):
-
-        fb = self.theory.f / blinear
-
-        # optimize fit for counterterms over the renormalization region
-        # coeffs is updated with the values of the counterterms
-        initial_counterterms = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-        res = optimize.minimize(self.__compute_renormalization_fit, initial_counterterms, method='Powell',
-                                args=(coeffs, blinear, fb), options={'xtol': 1e-3, 'ftol': 1e-3, 'maxiter': 50000, 'maxfev': 50000})
-
-        if not res.success:
-            raise RuntimeError(res.message)
-
-        return {'c0': res.x[0],
-                'c2': res.x[1],
-                'c4': res.x[2],
-                'd1': res.x[3],
-                'd2': res.x[4],
-                'd3': res.x[5]}
-
-
-    def __compute_renormalization_fit(self, x, coeffs, blinear, fb):
-
-        c0, c2, c4, d1, d2, d3 = x
-
-        # OPE constrains coefficient of mu^6 counterterm
-        c6_ope = fb*c4 - fb*fb*c2 + fb*fb*fb*c0
-
-        coeffs.update({'c0': c0 * blinear,
-                       'c2': c2 * blinear,
-                       'c4': c4 * blinear,
-                       'c6': c6_ope * blinear,
-                       'd1': d1,
-                       'd2': d2,
-                       'd3': d3})
-
-        P0, P2, P4 = self.build_theory_P_ell(coeffs)
-
-        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'ren') for region in self.data.regions])
-
-        return -lik
 
 
     def cleanup(self):

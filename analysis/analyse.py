@@ -61,16 +61,14 @@ class EFT_tools(heft.cosmosis_pipeline):
         data = WizCOLA.products(config, ks)
 
         # build theory container
-        theory = EFT.EFT_products(config, ks)
+        theory = EFT.theory(config, ks)
 
         # pass configuration to base class
         super(EFT_tools, self).__init__('EFT_Analyse', data, theory)
 
 
-    def compute_chisq_variation(self, coeffs):
+    def compute_chisq_variation(self, P0, P2, P4):
 
-        # build EFT prediction for power spectra corresponding to this coefficient combination
-        P0, P2, P4 = self.build_theory_P_ell(coeffs)
         P = np.concatenate( (P0, P2, P4) )
 
         # set up empty dictionary to hold return values
@@ -137,14 +135,12 @@ class EFT_tools(heft.cosmosis_pipeline):
         return rval
 
 
-    def make_summary_plot(self, plot_file, coeffs):
+    def make_summary_plot(self, plot_file, P0, P2, P4):
 
-        P0, P2, P4 = self.build_theory_P_ell(coeffs)
         P = np.concatenate( (P0, P2, P4) )
 
         # compute total chi-square value
-        lik = sum([self.compute_likelihood(region, P0, P2, P4, 'fit') for region in self.data.regions])
-        total_chisq = -2.0 * lik
+        total_chisq = -2.0 * self.compute_likelihood(P0, P2, P4, 'fit')
 
         with open(plot_file, 'w') as f:
 
@@ -346,12 +342,9 @@ class analyse_core(object):
 
         param_dict = self.make_params(ps)
         coeffs = tools.make_coeff_dict(param_dict)
-        tools.add_counterterms_to_coeff_dict(coeffs, ps, self.get_linear_bias(ps))
+        P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, ps, self.get_linear_bias(ps))
 
-        P0, P2, P4 = tools.build_theory_P_ell(coeffs)
-        lik = sum([tools.compute_likelihood(region, P0, P2, P4, 'fit') for region in tools.data.regions])
-
-        chisq = -2.0 * lik
+        chisq = -2.0 * tools.compute_likelihood(P0, P2, P4, 'fit')
 
         return chisq
 
@@ -604,9 +597,9 @@ def write_summary(realizations, out_file):
 
             param_dict = rlz.make_params(row)
             coeffs = tools.make_coeff_dict(param_dict)
-            tools.add_counterterms_to_coeff_dict(coeffs, row, rlz.get_linear_bias(row))
+            P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, row, rlz.get_linear_bias(row))
 
-            deviations = tools.compute_chisq_variation(coeffs)
+            deviations = tools.compute_chisq_variation(P0, P2, P4)
 
             row.update(deviations)
             row.update({'weight': 1, 'like': 1})
@@ -627,6 +620,6 @@ def write_Pell(list, out_file):
 
         params = rlz.make_params(bestfit)
         coeffs = tools.make_coeff_dict(params)
-        tools.add_counterterms_to_coeff_dict(coeffs, bestfit, rlz.get_linear_bias(bestfit))
+        P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, bestfit, rlz.get_linear_bias(bestfit))
 
-        tools.make_summary_plot(p, coeffs)
+        tools.make_summary_plot(p, P0, P2, P4)

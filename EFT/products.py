@@ -4,7 +4,7 @@ import sqlite3
 
 
 # container class for EFT theory products
-class EFT_products(object):
+class database(object):
 
     def __init__(self, my_config, k_sample):
 
