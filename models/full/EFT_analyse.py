@@ -4,7 +4,6 @@ import multiprocessing as mp
 import traceback
 import params as param_tools
 
-tag = 'full'
 model_name = 'Time-nonlocal'
 
 params = OrderedDict([('b1_1', 'b_1^{(1)}'), ('b1_2', 'b_1^{(2)}'), ('b1_3', 'b_1^{(3)}'),
@@ -14,14 +13,14 @@ regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
 numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-inputs = {'r01': 'output_'+tag+'_r01.txt', 'r02': 'output_'+tag+'_r02.txt', 'r03': 'output_'+tag+'_r03.txt',
-          'r04': 'output_'+tag+'_r04.txt', 'r05': 'output_'+tag+'_r05.txt', 'r06': 'output_'+tag+'_r06.txt',
-          'r07': 'output_'+tag+'_r07.txt', 'r08': 'output_'+tag+'_r08.txt', 'r09': 'output_'+tag+'_r09.txt',
-          'r10': 'output_'+tag+'_r10.txt'}
+inputs = {'r01': 'EFT_r01.txt', 'r02': 'EFT_r02.txt', 'r03': 'EFT_r03.txt',
+          'r04': 'EFT_r04.txt', 'r05': 'EFT_r05.txt', 'r06': 'EFT_r06.txt',
+          'r07': 'EFT_r07.txt', 'r08': 'EFT_r08.txt', 'r09': 'EFT_r09.txt',
+          'r10': 'EFT_r10.txt'}
 
-outputs = {'r01': tag+'_r01', 'r02': tag+'_r02', 'r03': tag+'_r03', 'r04': tag+'_r04',
-           'r05': tag+'_r05', 'r06': tag+'_r06', 'r07': tag+'_r07', 'r08': tag+'_r08',
-           'r09': tag+'_r09', 'r10': tag+'_r10'}
+outputs = {'r01': 'EFT_r01', 'r02': 'EFT_r02', 'r03': 'EFT_r03', 'r04': 'EFT_r04',
+           'r05': 'EFT_r05', 'r06': 'EFT_r06', 'r07': 'EFT_r07', 'r08': 'EFT_r08',
+           'r09': 'EFT_r09', 'r10': 'EFT_r10'}
 
 mixing_params = None
 stochastic_params = None
@@ -61,5 +60,5 @@ if __name__ == '__main__':
 
     p.close()
 
-    asy.write_summary(list, tag+'_ensemble')
-    asy.write_Pell(list, tag+'_ensemble')
+    asy.write_summary(list, 'ensemble')
+    asy.write_Pell(list, 'ensemble')
