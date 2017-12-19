@@ -2,7 +2,7 @@ from analysis import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback
-import linear_params as param_tools
+import params as param_tools
 
 tag = 'linear'
 model_name = 'Linear'

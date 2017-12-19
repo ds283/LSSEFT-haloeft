@@ -6,7 +6,7 @@ import haloeft as heft
 import WizCOLA
 import EFT
 
-import linear_params as lin
+import params as lin
 
 
 class HaloEFT(heft.cosmosis_pipeline):
