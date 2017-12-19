@@ -9,7 +9,7 @@ import EFT
 import params as lin
 
 
-class HaloEFT(heft.cosmosis_pipeline):
+class linear_pipeline(heft.cosmosis_pipeline):
 
     likes = section_names.likelihoods
 
@@ -25,7 +25,7 @@ class HaloEFT(heft.cosmosis_pipeline):
         theory = EFT.EFT_products(my_config, ks)
 
         # call base class constructor
-        super(HaloEFT, self).__init__(my_name, data, theory)
+        super(linear_pipeline, self).__init__(my_name, data, theory)
 
 
     def execute(self, block):
@@ -35,14 +35,14 @@ class HaloEFT(heft.cosmosis_pipeline):
 
         params = lin.make_params({'b1': b1})
 
-        return super(HaloEFT, self).compute(block, params, b1, self.likes)
+        return super(linear_pipeline, self).compute(block, params, b1, self.likes)
 
 
     def cleanup(self):
 
         # pass on to base class cleanup
-        super(HaloEFT, self).cleanup()
+        super(linear_pipeline, self).cleanup()
 
 
 # register this module with the CosmoSIS core
-declare_module(HaloEFT)
+declare_module(linear_pipeline)

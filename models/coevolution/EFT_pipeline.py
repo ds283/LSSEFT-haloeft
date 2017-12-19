@@ -9,7 +9,7 @@ import EFT
 import params as coevo
 
 
-class HaloEFT(heft.cosmosis_pipeline):
+class coevo_pipeline(heft.cosmosis_pipeline):
 
     likes = section_names.likelihoods
 
@@ -25,7 +25,7 @@ class HaloEFT(heft.cosmosis_pipeline):
         theory = EFT.EFT_products(my_config, ks)
 
         # call base class constructor
-        super(HaloEFT, self).__init__(my_name, data, theory)
+        super(coevo_pipeline, self).__init__(my_name, data, theory)
 
 
     def execute(self, block):
@@ -36,14 +36,14 @@ class HaloEFT(heft.cosmosis_pipeline):
 
         params = coevo.make_params({'b1': b1, 'b2': b2})
 
-        return super(HaloEFT, self).compute(block, params, b1, self.likes)
+        return super(coevo_pipeline, self).compute(block, params, b1, self.likes)
 
 
     def cleanup(self):
 
         # pass on to base class cleanup
-        super(HaloEFT, self).cleanup()
+        super(coevo_pipeline, self).cleanup()
 
 
 # register this module with the CosmoSIS core
-declare_module(HaloEFT)
+declare_module(coevo_pipeline)
