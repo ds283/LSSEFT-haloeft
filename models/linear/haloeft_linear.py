@@ -2,6 +2,10 @@ from cosmosis.runtime.declare import declare_module
 from cosmosis.datablock import names as section_names
 
 import haloeft as heft
+
+import WiggleZ
+import EFT
+
 import linear_params as lin
 
 
@@ -12,13 +16,13 @@ class HaloEFT(heft.HaloEFT_core):
     def __init__(self, my_config, my_name):
 
         # set up container of k-samples for WiggleZ
-        ks = heft.WiggleZ_ksamples(my_config)
+        ks = WiggleZ.WiggleZ_ksamples(my_config)
 
         # build data container
-        data = heft.WizCOLA_products(my_config, ks)
+        data = WiggleZ.WizCOLA_products(my_config, ks)
 
         # build theory container
-        theory = heft.EFT_products(my_config, ks)
+        theory = EFT.EFT_products(my_config, ks)
 
         # call base class constructor
         super(HaloEFT, self).__init__(my_config, my_name, data, theory)

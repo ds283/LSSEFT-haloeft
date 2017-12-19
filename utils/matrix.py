@@ -1,6 +1,7 @@
 import numpy as np
 
-import settings
+from config import settings
+
 
 # import a matrix from a flattened table
 def import_matrix(matrix, table, tag, name):

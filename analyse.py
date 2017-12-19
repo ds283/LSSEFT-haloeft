@@ -7,6 +7,8 @@ from getdist import plots as gdp
 
 import haloeft as heft
 
+import WiggleZ
+import EFT
 
 PconvCeiling=1E6
 
@@ -53,13 +55,13 @@ class EFT_tools(heft.HaloEFT_core):
         config["HaloEFT", "renormalize_kmax"] = ren_kmax
 
         # set up container of k-samples for WiggleZ
-        ks = heft.WiggleZ_ksamples(config)
+        ks = WiggleZ.WiggleZ_ksamples(config)
 
         # build data container
-        data = heft.WizCOLA_products(config, ks)
+        data = WiggleZ.WizCOLA_products(config, ks)
 
         # build theory container
-        theory = heft.EFT_products(config, ks)
+        theory = EFT.EFT_products(config, ks)
 
         # pass configuration to base class
         super(EFT_tools, self).__init__(config, 'EFT_Analyse', data, theory)
