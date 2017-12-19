@@ -1,5 +1,5 @@
 *.pyc
-/plots
-/output
 /theory
 /data
+output
+plots
