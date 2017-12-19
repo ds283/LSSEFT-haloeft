@@ -9,7 +9,7 @@ import EFT
 import coevo_params as coevo
 
 
-class HaloEFT(heft.HaloEFT_core):
+class HaloEFT(heft.cosmosis_pipeline):
 
     likes = section_names.likelihoods
 

@@ -9,7 +9,7 @@ import EFT
 import linear_params as lin
 
 
-class HaloEFT(heft.HaloEFT_core):
+class HaloEFT(heft.cosmosis_pipeline):
 
     likes = section_names.likelihoods
 

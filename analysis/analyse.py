@@ -13,7 +13,7 @@ import EFT
 PconvCeiling=1E6
 
 
-class EFT_tools(heft.HaloEFT_core):
+class EFT_tools(heft.cosmosis_pipeline):
 
     def __init__(self, realization, model_name, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
 

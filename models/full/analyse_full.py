@@ -1,4 +1,4 @@
-import analyse as asy
+from analysis import analyse as asy
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback

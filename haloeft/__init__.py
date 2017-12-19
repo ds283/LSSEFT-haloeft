@@ -1,0 +1,1 @@
+from pipeline import cosmosis_pipeline

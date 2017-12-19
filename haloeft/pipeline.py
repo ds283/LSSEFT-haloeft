@@ -3,14 +3,7 @@ import numpy as np
 from scipy import optimize
 
 
-
-
-
-
-
-
-
-class HaloEFT_core(object):
+class cosmosis_pipeline(object):
 
     def __init__(self, my_config, my_name, data, theory):
 

@@ -9,7 +9,7 @@ import EFT
 import full_params as fp
 
 
-class HaloEFT(heft.HaloEFT_core):
+class HaloEFT(heft.cosmosis_pipeline):
 
     likes = section_names.likelihoods
 
