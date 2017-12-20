@@ -136,15 +136,15 @@ class theory(object):
 
         P0 = zip0[0].copy()
         for a in zip0[1:]:
-            P0 += np.sum(a)  # in-place addition is fastest
+            P0 += a  # in-place addition is fastest
 
         P2 = zip2[0].copy()
         for a in zip2[1:]:
-            P2 += np.sum(a)  # in-place addition is fastest
+            P2 += a  # in-place addition is fastest
 
         P4 = zip4[0].copy()
         for a in zip4[1:]:
-            P4 += np.sum(a)  # in-place addition is fastest
+            P4 += a  # in-place addition is fastest
 
         return P0, P2, P4
 
