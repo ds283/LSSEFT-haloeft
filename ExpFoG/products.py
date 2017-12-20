@@ -96,7 +96,7 @@ class database(object):
         cursor = conn.cursor()
 
         # construct the relevant table name from knowing its tag, and whether we want the n=0, 2, 4, 6, or 8th power
-        table_name = '{tag}_mu{ell}'.format(tag=tag, ell=n)
+        table_name = '{tag}_mu{power}'.format(tag=tag, power=n)
 
         # execute SQL query
         cursor.execute(
