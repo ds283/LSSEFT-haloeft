@@ -103,7 +103,7 @@ class theory(object):
 
             mu6 = 0.3116883116883117 - (48*np.power(f,2)*np.power(k,2)*np.power(sigma,2))/143. + (24*np.power(f,4)*np.power(k,4)*np.power(sigma,4))/143.
 
-            mu8 = 0.3116883116883117 - (48*np.power(f,2)*np.power(k,2)*np.power(sigma,2))/143. + (24*np.power(f,4)*np.power(k,4)*np.power(sigma,4))/143.
+            mu8 = 0.3356643356643357 - (48*np.power(f,2)*np.power(k,2)*np.power(sigma,2))/143. + (36*np.power(f,4)*np.power(k,4)*np.power(sigma,4))/221.
 
         return np.array([mu0, mu2, mu4, mu6, mu8])
 
