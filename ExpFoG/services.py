@@ -25,15 +25,29 @@ class theory(object):
 
         if abs(sigma) > settings.LowSigmaSeries:
 
-            mu0 = (np.sqrt(np.pi)*erf(f*k*sigma))/(2.*f*k*sigma)
+            expf = np.exp(-np.power(f,2)*np.power(k,2)*np.power(sigma,2))
+            erff = erf(f*k*sigma)
 
-            mu2 = ((-2*f*k*sigma)/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + np.sqrt(np.pi)*erf(f*k*sigma))/(4.*np.power(f,3)*np.power(k,3)*np.power(sigma,3))
+            with np.errstate(over='raise'):
 
-            mu4 = ((-2*f*k*sigma*(3 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 3*np.sqrt(np.pi)*erf(f*k*sigma))/(8.*np.power(f,5)*np.power(k,5)*np.power(sigma,5))
+                try:
 
-            mu6 = ((-2*f*k*sigma*(15 + 10*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 15*np.sqrt(np.pi)*erf(f*k*sigma))/(16.*np.power(f,7)*np.power(k,7)*np.power(sigma,7))
+                    mu0 = expf*(0) + erff*(np.sqrt(np.pi)/(2.*f*k*sigma))
 
-            mu8 = ((-2*f*k*sigma*(105 + 70*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 28*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 8*np.power(f,6)*np.power(k,6)*np.power(sigma,6)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 105*np.sqrt(np.pi)*erf(f*k*sigma))/(32.*np.power(f,9)*np.power(k,9)*np.power(sigma,9))
+                    mu2 = expf*(-1/(2.*np.power(f,2)*np.power(k,2)*np.power(sigma,2))) + erff*(np.sqrt(np.pi)/(4.*np.power(f,3)*np.power(k,3)*np.power(sigma,3)))
+
+                    mu4 = expf*(-(3 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))/(4.*np.power(f,4)*np.power(k,4)*np.power(sigma,4))) + erff*((3*np.sqrt(np.pi))/(8.*np.power(f,5)*np.power(k,5)*np.power(sigma,5)))
+
+                    mu6 = expf*(-(15 + 10*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4))/(8.*np.power(f,6)*np.power(k,6)*np.power(sigma,6))) + erff*((15*np.sqrt(np.pi))/(16.*np.power(f,7)*np.power(k,7)*np.power(sigma,7)))
+
+                    mu8 = expf*(-(105 + 70*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 28*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 8*np.power(f,6)*np.power(k,6)*np.power(sigma,6))/(16.*np.power(f,8)*np.power(k,8)*np.power(sigma,8))) + erff*((105*np.sqrt(np.pi))/(32.*np.power(f,9)*np.power(k,9)*np.power(sigma,9)))
+
+                except FloatingPointError:
+
+                    print 'k = {k}, f = {f}, sigma = {s}'.format(k=k, f=f, s=sigma)
+                    print 'exp(k^2) = {x}'.format(x=np.exp(np.power(k, 2)))
+
+                    raise
 
         else:
 
@@ -54,15 +68,29 @@ class theory(object):
 
         if abs(sigma) > settings.LowSigmaSeries:
 
-            mu0 = (5*((-6*f*k*sigma)/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + np.sqrt(np.pi)*(3 - 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))*erf(f*k*sigma)))/(8.*np.power(f,3)*np.power(k,3)*np.power(sigma,3))
+            expf = np.exp(-np.power(f,2)*np.power(k,2)*np.power(sigma,2))
+            erff = erf(f*k*sigma)
 
-            mu2 = (5*((-2*f*k*sigma*(9 + 4*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + np.sqrt(np.pi)*(9 - 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))*erf(f*k*sigma)))/(16.*np.power(f,5)*np.power(k,5)*np.power(sigma,5))
+            with np.errstate(over='raise'):
 
-            mu4 = (5*((-2*f*k*sigma*(45 + 24*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 8*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 3*np.sqrt(np.pi)*(15 - 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))*erf(f*k*sigma)))/(32.*np.power(f,7)*np.power(k,7)*np.power(sigma,7))
+                try:
 
-            mu6 = (5*((-2*f*k*sigma*(315 + 180*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 64*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 16*np.power(f,6)*np.power(k,6)*np.power(sigma,6)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 15*np.sqrt(np.pi)*(21 - 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))*erf(f*k*sigma)))/(64.*np.power(f,9)*np.power(k,9)*np.power(sigma,9))
+                    mu0 = expf*(-15/(4.*np.power(f,2)*np.power(k,2)*np.power(sigma,2))) + erff*((-5*np.sqrt(np.pi)*(-3 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(8.*np.power(f,3)*np.power(k,3)*np.power(sigma,3)))
 
-            mu8 = (-5*(5670*f*k*sigma + 16*np.power(f,3)*np.power(k,3)*np.power(sigma,3)*(210 + 77*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 20*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 4*np.power(f,6)*np.power(k,6)*np.power(sigma,6)) + 105*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.sqrt(np.pi)*(-27 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2))*erf(f*k*sigma)))/(128.*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.power(f,11)*np.power(k,11)*np.power(sigma,11))
+                    mu2 = expf*((-5*(9 + 4*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(8.*np.power(f,4)*np.power(k,4)*np.power(sigma,4))) + erff*((-5*np.sqrt(np.pi)*(-9 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(16.*np.power(f,5)*np.power(k,5)*np.power(sigma,5)))
+
+                    mu4 = expf*((-5*(45 + 24*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 8*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(16.*np.power(f,6)*np.power(k,6)*np.power(sigma,6))) + erff*((-15*np.sqrt(np.pi)*(-15 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(32.*np.power(f,7)*np.power(k,7)*np.power(sigma,7)))
+
+                    mu6 = expf*((-5*(315 + 180*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 64*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 16*np.power(f,6)*np.power(k,6)*np.power(sigma,6)))/(32.*np.power(f,8)*np.power(k,8)*np.power(sigma,8))) + erff*((5*(315*np.sqrt(np.pi) - 30*np.power(f,2)*np.power(k,2)*np.sqrt(np.pi)*np.power(sigma,2)))/(64.*np.power(f,9)*np.power(k,9)*np.power(sigma,9)))
+
+                    mu8 = expf*((-5*(2835 + 1680*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 616*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 160*np.power(f,6)*np.power(k,6)*np.power(sigma,6) + 32*np.power(f,8)*np.power(k,8)*np.power(sigma,8)))/(64.*np.power(f,10)*np.power(k,10)*np.power(sigma,10))) + erff*((-525*np.sqrt(np.pi)*(-27 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(128.*np.power(f,11)*np.power(k,11)*np.power(sigma,11)))
+
+                except FloatingPointError:
+
+                    print 'k = {k}, f = {f}, sigma = {s}'.format(k=k, f=f, s=sigma)
+                    print 'exp(k^2) = {x}'.format(x=np.exp(np.power(k, 2)))
+
+                    raise
 
         else:
 
@@ -83,15 +111,29 @@ class theory(object):
 
         if abs(sigma) > settings.LowSigmaSeries:
 
-            mu0 = (9*((-10*f*k*sigma*(21 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 3*np.sqrt(np.pi)*(35 - 20*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4))*erf(f*k*sigma)))/(64.*np.power(f,5)*np.power(k,5)*np.power(sigma,5))
+            expf = np.exp(-np.power(f,2)*np.power(k,2)*np.power(sigma,2))
+            erff = erf(f*k*sigma)
 
-            mu2 = (9*((-2*f*k*sigma*(525 + 170*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 32*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 3*np.sqrt(np.pi)*(175 - 60*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4))*erf(f*k*sigma)))/(128.*np.power(f,7)*np.power(k,7)*np.power(sigma,7))
+            with np.errstate(over='raise'):
 
-            mu4 = (9*((-2*f*k*sigma*(3675 + 1550*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 416*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 64*np.power(f,6)*np.power(k,6)*np.power(sigma,6)))/np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2)) + 3*np.sqrt(np.pi)*(1225 + 12*np.power(f,2)*np.power(k,2)*np.power(sigma,2)*(-5 + f*k*sigma)*(5 + f*k*sigma))*erf(f*k*sigma)))/(256.*np.power(f,9)*np.power(k,9)*np.power(sigma,9))
+                try:
 
-            mu6 = (9*(-2*f*k*sigma*(33075 + 15750*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 64*np.power(f,4)*np.power(k,4)*np.power(sigma,4)*(75 + 15*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 2*np.power(f,4)*np.power(k,4)*np.power(sigma,4))) + 45*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.sqrt(np.pi)*(735 - 140*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4))*erf(f*k*sigma)))/(512.*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.power(f,11)*np.power(k,11)*np.power(sigma,11))
+                    mu0 = expf*((-45*(21 + 2*np.power(f,2)*np.power(k,2)*np.power(sigma,2)))/(32.*np.power(f,4)*np.power(k,4)*np.power(sigma,4))) + erff*((27*np.sqrt(np.pi)*(35 - 20*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(64.*np.power(f,5)*np.power(k,5)*np.power(sigma,5)))
 
-            mu8 = (9*(-2*f*k*sigma*(363825 + 185850*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 64*np.power(f,4)*np.power(k,4)*np.power(sigma,4)*(945 + 210*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 34*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 4*np.power(f,6)*np.power(k,6)*np.power(sigma,6))) + 315*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.sqrt(np.pi)*(1155 - 180*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4))*erf(f*k*sigma)))/(1024.*np.exp(np.power(f,2)*np.power(k,2)*np.power(sigma,2))*np.power(f,13)*np.power(k,13)*np.power(sigma,13))
+                    mu2 = expf*((-9*(525 + 170*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 32*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(64.*np.power(f,6)*np.power(k,6)*np.power(sigma,6))) + erff*((27*np.sqrt(np.pi)*(175 - 60*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(128.*np.power(f,7)*np.power(k,7)*np.power(sigma,7)))
+
+                    mu4 = expf*((-9*(3675 + 1550*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 416*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 64*np.power(f,6)*np.power(k,6)*np.power(sigma,6)))/(128.*np.power(f,8)*np.power(k,8)*np.power(sigma,8))) + erff*((9*(3675*np.sqrt(np.pi) - 900*np.power(f,2)*np.power(k,2)*np.sqrt(np.pi)*np.power(sigma,2) + 36*np.power(f,4)*np.power(k,4)*np.sqrt(np.pi)*np.power(sigma,4)))/(256.*np.power(f,9)*np.power(k,9)*np.power(sigma,9)))
+
+                    mu6 = expf*((-9*(33075 + 15750*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4800*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 960*np.power(f,6)*np.power(k,6)*np.power(sigma,6) + 128*np.power(f,8)*np.power(k,8)*np.power(sigma,8)))/(256.*np.power(f,10)*np.power(k,10)*np.power(sigma,10))) + erff*((405*np.sqrt(np.pi)*(735 - 140*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(512.*np.power(f,11)*np.power(k,11)*np.power(sigma,11)))
+
+                    mu8 = expf*((-9*(363825 + 185850*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 60480*np.power(f,4)*np.power(k,4)*np.power(sigma,4) + 13440*np.power(f,6)*np.power(k,6)*np.power(sigma,6) + 2176*np.power(f,8)*np.power(k,8)*np.power(sigma,8) + 256*np.power(f,10)*np.power(k,10)*np.power(sigma,10)))/(512.*np.power(f,12)*np.power(k,12)*np.power(sigma,12))) + erff*((2835*np.sqrt(np.pi)*(1155 - 180*np.power(f,2)*np.power(k,2)*np.power(sigma,2) + 4*np.power(f,4)*np.power(k,4)*np.power(sigma,4)))/(1024.*np.power(f,13)*np.power(k,13)*np.power(sigma,13)))
+
+                except FloatingPointError:
+
+                    print 'k = {k}, f = {f}, sigma = {s}'.format(k=k, f=f, s=sigma)
+                    print 'exp(k^2) = {x}'.format(x=np.exp(np.power(k, 2)))
+
+                    raise
 
         else:
 
@@ -151,7 +193,7 @@ class theory(object):
 
     def compute_model_parameters(self, coeffs, blinear, LikelihoodAgent):
         
-        initial_sigmav = np.array([0.0])
+        initial_sigmav = np.array([1.0])
         res = optimize.minimize(self.__sigmav_fit, initial_sigmav, method='Powell',
                                 args=(coeffs, blinear, LikelihoodAgent),
                                 options={'xtol': 1e-3, 'ftol': 1e-3, 'maxiter': 50000, 'maxfev': 50000})
