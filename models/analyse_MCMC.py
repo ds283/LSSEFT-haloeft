@@ -132,8 +132,10 @@ if __name__ == '__main__':
 
             p.close()
 
-            asy.write_summary(obj_list, path, 'ensemble')
-            asy.write_Pell(obj_list, path, 'ensemble')
+            ptools = imp.load_source("params", params_module)
+
+            asy.write_summary(obj_list, path, 'ensemble', ptools.make_params, ptools.get_linear_bias)
+            asy.write_Pell(obj_list, path, 'ensemble', ptools.make_params, ptools.get_linear_bias)
 
         else:
 

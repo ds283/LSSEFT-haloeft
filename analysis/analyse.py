@@ -7,14 +7,10 @@ from getdist import plots as gdp
 
 class analyse_core(object):
 
-    def __init__(self, t, p, mp, glb):
+    def __init__(self, t, p):
 
         self.__params = p
-
         self.__tools = t
-
-        self.__make_params = mp
-        self.__get_linear_bias = glb
 
 
     def get_bias_params(self):
@@ -32,18 +28,13 @@ class analyse_core(object):
         return self.__tools
 
 
-    def get_param_tools(self):
-
-        return self.__make_params, self.__get_linear_bias
-
-
-    def compute_chisquare(self, ps):
+    def compute_chisquare(self, ps, mp, glb):
 
         # compute chi-square for the parameters in ps
 
-        param_dict = self.__make_params(ps)
+        param_dict = mp(ps)
         coeffs = self.__tools.make_coeff_dict(param_dict)
-        P0, P2, P4 = self.__tools.theory.build_theory_P_ell(coeffs, ps, self.__get_linear_bias(ps))
+        P0, P2, P4 = self.__tools.theory.build_theory_P_ell(coeffs, ps, glb(ps))
 
         chisq = -2.0 * self.__tools.compute_likelihood(P0, P2, P4, 'fit')
 
@@ -52,9 +43,9 @@ class analyse_core(object):
 
 class analyse_cosmosis(analyse_core):
 
-    def __init__(self, t, p, root_path, cosmosis_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, t, p, root_path, cosmosis_file, out_file, mp, glb, mixing_plot=None, stochastic_plot=None):
 
-        super(analyse_cosmosis, self).__init__(t, p, make_params, get_linear_bias)
+        super(analyse_cosmosis, self).__init__(t, p)
 
         # construct hierarchy of plot folders
         mixing_folder = os.path.join(root_path, 'plots', 'mixing')
@@ -177,7 +168,7 @@ class analyse_cosmosis(analyse_core):
         r = {p: x.parWithName(p).bestfit_sample for p in list(p.keys()) + list(model_params.keys())}
 
         self.bestfit = r
-        self.bestfit_chisquare = self.compute_chisquare(r)
+        self.bestfit_chisquare = self.compute_chisquare(r, mp, glb)
 
 
     def get_fit_point(self):
@@ -187,9 +178,9 @@ class analyse_cosmosis(analyse_core):
 
 class analyse_maxlike(analyse_core):
 
-    def __init__(self, t, p, root_path, maxlike_file, make_params, get_linear_bias):
+    def __init__(self, t, p, root_path, maxlike_file, mp, glb):
 
-        super(analyse_maxlike, self).__init__(t, p, make_params, get_linear_bias)
+        super(analyse_maxlike, self).__init__(t, p)
 
         # construct hierarchy of plot folders
         plot_folder = os.path.join(root_path, 'plots')
@@ -219,7 +210,7 @@ class analyse_maxlike(analyse_core):
         r = {p: row[p] for p in list(p.keys() + list(model_params.keys()))}
 
         self.bestfit = r
-        self.best_chisquare = self.compute_chisquare(r)
+        self.best_chisquare = self.compute_chisquare(r, mp, glb)
 
 
     def get_fit_point(self):
@@ -228,7 +219,7 @@ class analyse_maxlike(analyse_core):
 
 
 
-def write_summary(analysis_list, root_path, out_file):
+def write_summary(analysis_list, root_path, out_file, mp, glb):
 
     # filenames for GetDist chain-like output
     getdist_param_file = os.path.join(root_path, 'plots', out_file + '.paramnames')
@@ -280,8 +271,6 @@ def write_summary(analysis_list, root_path, out_file):
             row = rlz.get_fit_point()
             tools = rlz.get_tools()
 
-            mp, glb = rlz.get_param_tools()
-
             param_dict = mp(row)
             coeffs = tools.make_coeff_dict(param_dict)
             P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, row, glb(row))
@@ -319,7 +308,7 @@ def __get_parameter_lists(analysis_list):
     return params, model_params
 
 
-def write_Pell(list, root_path, out_file):
+def write_Pell(list, root_path, out_file, mp, glb):
 
     for real in list:
 
@@ -329,8 +318,6 @@ def write_Pell(list, root_path, out_file):
 
         bestfit = rlz.get_fit_point()
         tools = rlz.get_tools()
-
-        mp, glb = rlz.get_param_tools()
 
         params = mp(bestfit)
         coeffs = tools.make_coeff_dict(params)
