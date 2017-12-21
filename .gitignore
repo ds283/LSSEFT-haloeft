@@ -1,6 +1,7 @@
 *.pyc
 /theory
 /data
+/scripts
 output
 plots
 r01.ini
