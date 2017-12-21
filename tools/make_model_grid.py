@@ -34,10 +34,10 @@ for b in bias_models:
 
         output_folder = os.path.join(folder, "output")
 
-        if not os.path.exists(folder):
+        if not os.path.exists(output_folder):
 
             try:
-                os.makedirs(folder)
+                os.makedirs(output_folder)
             except OSError, e:
                 if e.errno != os.errno.EEXIST:
                     raise
