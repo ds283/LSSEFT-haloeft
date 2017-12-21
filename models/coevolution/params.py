@@ -1,3 +1,8 @@
+from collections import OrderedDict
+
+param_dict = OrderedDict([('b1', 'b_1'), ('b2', 'b_2')])
+
+
 def make_params(plist):
 
     b1 = plist['b1']

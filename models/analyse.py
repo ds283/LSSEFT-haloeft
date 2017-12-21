@@ -1,8 +1,9 @@
 from collections import OrderedDict
 import multiprocessing as mp
 import traceback
-
-import models.full.params as param_tools
+import argparse
+import os
+import importlib
 
 import WizCOLA
 import EFT
@@ -12,41 +13,36 @@ from analysis import analyse as asy
 from analysis.config import make_config_block
 
 
-model_name = 'Time-nonlocal'
-
-params = OrderedDict([('b1_1', 'b_1^{(1)}'), ('b1_2', 'b_1^{(2)}'), ('b1_3', 'b_1^{(3)}'),
-                      ('b2_2', 'b_2^{(2)}'), ('bG2_2', 'b_{G_2}^{(2)}'), ('bG2_3', 'b_{G_2}^{(3)}')])
-
 regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
 numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-inputs = {'r01': 'EFT_r01.txt', 'r02': 'EFT_r02.txt', 'r03': 'EFT_r03.txt',
-          'r04': 'EFT_r04.txt', 'r05': 'EFT_r05.txt', 'r06': 'EFT_r06.txt',
-          'r07': 'EFT_r07.txt', 'r08': 'EFT_r08.txt', 'r09': 'EFT_r09.txt',
-          'r10': 'EFT_r10.txt'}
+inputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
+          'r04': 'r04.txt', 'r05': 'r05.txt', 'r06': 'r06.txt',
+          'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
+          'r10': 'r10.txt'}
 
-outputs = {'r01': 'EFT_r01', 'r02': 'EFT_r02', 'r03': 'EFT_r03', 'r04': 'EFT_r04',
-           'r05': 'EFT_r05', 'r06': 'EFT_r06', 'r07': 'EFT_r07', 'r08': 'EFT_r08',
-           'r09': 'EFT_r09', 'r10': 'EFT_r10'}
+outputs = {'r01': 'r01', 'r02': 'r02', 'r03': 'r03', 'r04': 'r04',
+           'r05': 'r05', 'r06': 'r06', 'r07': 'r07', 'r08': 'r08',
+           'r09': 'r09', 'r10': 'r10'}
 
 mixing_params = None
 stochastic_params = None
 
 
-def f(tag):
+def f(region_tag, file, path, ptools):
 
     try:
 
-        config = make_config_block(numbers[tag])
+        config = make_config_block(numbers[region_tag])
         ks = WizCOLA.ksamples(config)
         data = WizCOLA.products(config, ks)
         theory = EFT.theory(config, ks)
 
-        t = heft.tools(model_name, data, theory)
+        t = heft.tools(path, data, theory)
 
-        obj = asy.analyse_cosmosis(t, models.full.params, inputs[tag], outputs[tag],
-                                   param_tools.make_params, param_tools.get_linear_bias,
+        obj = asy.analyse_cosmosis(t, ptools.param_dict, path, file, outputs[region_tag],
+                                   ptools.make_params, ptools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
     except Exception as e:
@@ -59,21 +55,60 @@ def f(tag):
 
         raise e
 
-    return obj
+    return region_tag, obj
 
 
 if __name__ == '__main__':
 
-    list = OrderedDict()
+    # build command-line parser to extract pathnames from the command line
+    parser = argparse.ArgumentParser(description='Perform post-processing analysis of halo fits')
+    parser.add_argument('dirnames', metavar='path', type=str, nargs='*',
+                        help='path name containing CosmoSIS output products')
 
-    p = mp.Pool()
+    args = parser.parse_args()
 
-    for n, r in enumerate(p.map(f, regions)):
+    # loop through each pathname provided
+    for path in args.dirnames:
 
-        label = regions[n]
-        list[label] = r
+        # check whether path exists
+        if not os.path.exists(path):
 
-    p.close()
+            print "ignoring non-existent path '{p}'".format(p=path)
+            continue
 
-    asy.write_summary(list, 'EFT_ensemble')
-    asy.write_Pell(list, 'EFT_ensemble')
+        # check with params module is present
+        params_module = os.path.join(path, 'params.py')
+        if not os.path.exists(params_module):
+
+            print "ignoring path '{p}'; cannot find parameters module params.py"
+            continue
+
+        param_tools = importlib.import_module(params_module)
+
+        # check which region files exist
+        output_path = os.path.join(path, 'output')
+        region_files = []
+
+        for r in regions:
+
+            file = os.path.join(output_path, outputs[r])
+
+            if os.path.exists(file):
+
+                region_files.append((r, file, path, param_tools))
+
+        # list will hold the analysis objects for each file
+        obj_list = OrderedDict()
+
+        # set up a multiprocessing pool to parallelize the analysis step
+        p = mp.Pool()
+
+        # build analysis objects for each file we detected
+        for r, obj in p.map(f, region_files):
+
+            obj_list[r] = obj
+
+        p.close()
+
+        asy.write_summary(obj_list, path, 'ensemble')
+        asy.write_Pell(obj_list, path, 'ensemble')
