@@ -2,7 +2,7 @@ from collections import OrderedDict
 import multiprocessing as mp
 import traceback
 
-import params as param_tools
+import models.full.params as param_tools
 
 import WizCOLA
 import EFT
@@ -45,7 +45,7 @@ def f(tag):
 
         t = heft.tools(model_name, data, theory)
 
-        obj = asy.analyse_cosmosis(t, params, inputs[tag], outputs[tag],
+        obj = asy.analyse_cosmosis(t, models.full.params, inputs[tag], outputs[tag],
                                    param_tools.make_params, param_tools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
