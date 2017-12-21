@@ -3,7 +3,7 @@ import multiprocessing as mp
 import traceback
 import argparse
 import os
-import importlib
+import imp
 
 import WizCOLA
 
@@ -34,7 +34,7 @@ mixing_params = None
 stochastic_params = None
 
 
-def f(region_tag, file_name, root_path, ptools):
+def f((region_tag, file_name, root_path, params_module)):
 
     try:
 
@@ -57,6 +57,8 @@ def f(region_tag, file_name, root_path, ptools):
             raise RuntimeError
 
         t = heft.tools(root_path, data, theory)
+
+        ptools = imp.load_source("params", params_module)
 
         obj = asy.analyse_cosmosis(t, ptools.param_dict, root_path, file_name, outputs[region_tag],
                                    ptools.make_params, ptools.get_linear_bias,
@@ -94,13 +96,13 @@ if __name__ == '__main__':
             continue
 
         # check with params module is present
-        params_module = os.path.join(path, 'params.py')
+        params_module = os.path.join(path, '..', 'params.py')
         if not os.path.exists(params_module):
 
-            print "ignoring path '{p}'; cannot find parameters module params.py"
+            print "ignoring path '{p}'; cannot find parameters module params.py".format(p=path)
             continue
 
-        param_tools = importlib.import_module(params_module)
+        print "-- analysing path '{p}'".format(p=path)
 
         # check which region files exist
         output_path = os.path.join(path, 'output')
@@ -108,24 +110,31 @@ if __name__ == '__main__':
 
         for r in regions:
 
-            file = os.path.join(output_path, outputs[r])
+            file = os.path.join(output_path, inputs[r])
 
             if os.path.exists(file):
 
-                region_files.append((r, file, path, param_tools))
+                region_files.append((r, file, path, params_module))
+                print "** added region output '{p}' to analysis list".format(p=file)
 
-        # list will hold the analysis objects for each file
-        obj_list = OrderedDict()
+        if len(region_files) > 0:
 
-        # set up a multiprocessing pool to parallelize the analysis step
-        p = mp.Pool()
+            # list will hold the analysis objects for each file
+            obj_list = OrderedDict()
 
-        # build analysis objects for each file we detected
-        for r, obj in p.map(f, region_files):
+            # set up a multiprocessing pool to parallelize the analysis step
+            p = mp.Pool()
 
-            obj_list[r] = obj
+            # build analysis objects for each file we detected
+            for r, obj in p.map(f, region_files):
 
-        p.close()
+                obj_list[r] = obj
 
-        asy.write_summary(obj_list, path, 'ensemble')
-        asy.write_Pell(obj_list, path, 'ensemble')
+            p.close()
+
+            asy.write_summary(obj_list, path, 'ensemble')
+            asy.write_Pell(obj_list, path, 'ensemble')
+
+        else:
+
+            print '** did not find any region outputs to analyse'

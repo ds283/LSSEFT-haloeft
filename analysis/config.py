@@ -6,7 +6,7 @@ def make_config_block(realization, use_Halofit, fit_kmin=0.02, fit_kmax=0.30, re
     # use a dictionary to mimic the CosmoSIS datablock API
     my_config = {}
 
-    root = os.path.join("..", "..")
+    root = os.path.join("..")
 
     my_config["HaloEFT", "h1_means"] = os.path.join(root, "data/means/pkpole_wizcola_1hr_z0pt2_0pt6.dat")
     my_config["HaloEFT", "h3_means"] = os.path.join(root, "data/means/pkpole_wizcola_3hr_z0pt2_0pt6.dat")
