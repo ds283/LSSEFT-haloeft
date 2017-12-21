@@ -1,4 +1,5 @@
 import os
+import stat
 
 bias_models = [ "coevolution", "full", "linear", "MR" ]
 RSD_models = [ "EFT", "KaiserHalofit", "KaiserTree", "ZhengSong" ]
@@ -62,3 +63,78 @@ for b in bias_models:
                 f.write("\n")
                 f.write("[HaloEFT]\n")
                 f.write("realization = {n}\n".format(n=numbers[reg]))
+
+
+script_root = os.path.join("..", "scripts")
+
+if not os.path.exists(script_root):
+
+    try:
+        os.makedirs(script_root)
+    except OSError, e:
+        if e.errno != os.errno.EEXIST:
+            raise
+
+
+# now generate shell scripts to do batch jobs -- bias model:
+for b in bias_models:
+
+    script = os.path.join(script_root, "run-{b}".format(b=b))
+
+    with open(script, "w") as f:
+
+        for r in RSD_models:
+
+            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
+            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+
+    st = os.stat(script)
+    os.chmod(script, st.st_mode | stat.S_IEXEC)
+
+
+# now generate shell scripts to do batch jobs -- RSD model:
+for r in RSD_models:
+
+    script = os.path.join(script_root, "run-{r}".format(r=r))
+
+    with open(script, "w") as f:
+
+        for b in bias_models:
+
+            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
+            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+
+    st = os.stat(script)
+    os.chmod(script, st.st_mode | stat.S_IEXEC)
+
+
+# now generate shell scripts to do batch jobs -- entire model grid
+script = os.path.join(script_root, "run-grid")
+
+with open(script, "w") as f:
+
+    for b in bias_models:
+
+        for r in RSD_models:
+
+            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
+            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+
+st = os.stat(script)
+os.chmod(script, st.st_mode | stat.S_IEXEC)
+
+
+# individual grid cell
+for b in bias_models:
+
+    for r in RSD_models:
+
+        script = os.path.join(script_root, "run-{b}-{r}".format(b=b, r=r))
+
+        with open(script, "w") as f:
+
+            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
+            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+
+        st = os.stat(script)
+        os.chmod(script, st.st_mode | stat.S_IEXEC)
