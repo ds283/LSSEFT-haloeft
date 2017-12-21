@@ -4,22 +4,13 @@ import os
 from getdist import mcsamples as mcs
 from getdist import plots as gdp
 
-import haloeft as heft
-
-import WizCOLA
-import EFT
-
 
 class analyse_core(object):
 
-    def __init__(self, t, p, mp, glb):
+    def __init__(self, t, p):
 
         self.__params = p
-
         self.__tools = t
-
-        self.__make_params = mp
-        self.__get_linear_bias = glb
 
 
     def get_bias_params(self):
@@ -37,18 +28,13 @@ class analyse_core(object):
         return self.__tools
 
 
-    def get_param_tools(self):
-
-        return self.__make_params, self.__get_linear_bias
-
-
-    def compute_chisquare(self, ps):
+    def compute_chisquare(self, ps, mp, glb):
 
         # compute chi-square for the parameters in ps
 
-        param_dict = self.__make_params(ps)
+        param_dict = mp(ps)
         coeffs = self.__tools.make_coeff_dict(param_dict)
-        P0, P2, P4 = self.__tools.theory.build_theory_P_ell(coeffs, ps, self.__get_linear_bias(ps))
+        P0, P2, P4 = self.__tools.theory.build_theory_P_ell(coeffs, ps, glb(ps))
 
         chisq = -2.0 * self.__tools.compute_likelihood(P0, P2, P4, 'fit')
 
@@ -57,13 +43,13 @@ class analyse_core(object):
 
 class analyse_cosmosis(analyse_core):
 
-    def __init__(self, t, p, cosmosis_file, out_file, make_params, get_linear_bias, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, t, p, root_path, cosmosis_file, out_file, mp, glb, mixing_plot=None, stochastic_plot=None):
 
-        super(analyse_cosmosis, self).__init__(t, p, make_params, get_linear_bias)
+        super(analyse_cosmosis, self).__init__(t, p)
 
         # construct hierarchy of plot folders
-        mixing_folder = os.path.join('plots', 'mixing')
-        stochastic_folder = os.path.join('plots', 'stochastic')
+        mixing_folder = os.path.join(root_path, 'plots', 'mixing')
+        stochastic_folder = os.path.join(root_path, 'plots', 'stochastic')
 
         # generate folder hierarchy if it does not already exist
         if not os.path.exists(mixing_folder):
@@ -81,9 +67,9 @@ class analyse_cosmosis(analyse_core):
                     raise
 
         # generate paths for GetDist-format output files
-        getdist_root = os.path.join('plots', out_file)
-        getdist_param_file = os.path.join('plots', out_file + '.paramnames')
-        getdist_chain_file = os.path.join('plots', out_file + '.txt')
+        getdist_root = os.path.join(root_path, 'plots', out_file)
+        getdist_param_file = os.path.join(root_path, 'plots', out_file + '.paramnames')
+        getdist_chain_file = os.path.join(root_path, 'plots', out_file + '.txt')
 
         # generate paths for output plots
         triangle_mixing_file = os.path.join(mixing_folder, out_file + '.png')
@@ -118,17 +104,16 @@ class analyse_cosmosis(analyse_core):
 
 
         # generate GetDist-compatible chain file from CosmoSIS output, if it does not already exist
-        cosmosis_path = os.path.join('output', cosmosis_file)
 
         if not os.path.exists(getdist_chain_file):
 
-            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=cosmosis_path, o=getdist_chain_file)
+            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=cosmosis_file, o=getdist_chain_file)
 
             # note p.keys() must return a list that is ordered in the correct way
             input_columns = list(p.keys()) + list(model_params.keys()) + ['like']
             output_columns = ['weight', 'like'] + list(p.keys()) + list(model_params.keys())
 
-            table = ascii.read(cosmosis_path, Reader=ascii.NoHeader, names=input_columns)
+            table = ascii.read(cosmosis_file, Reader=ascii.NoHeader, names=input_columns)
 
             with open(getdist_chain_file, 'w') as g:
 
@@ -153,7 +138,7 @@ class analyse_cosmosis(analyse_core):
 
         else:
 
-            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_path, o=getdist_chain_file)
+            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_file, o=getdist_chain_file)
 
 
         # IMPORT CONVERTED CHAIN FILES USING GETDIST
@@ -183,7 +168,7 @@ class analyse_cosmosis(analyse_core):
         r = {p: x.parWithName(p).bestfit_sample for p in list(p.keys()) + list(model_params.keys())}
 
         self.bestfit = r
-        self.bestfit_chisquare = self.compute_chisquare(r)
+        self.bestfit_chisquare = self.compute_chisquare(r, mp, glb)
 
 
     def get_fit_point(self):
@@ -193,12 +178,12 @@ class analyse_cosmosis(analyse_core):
 
 class analyse_maxlike(analyse_core):
 
-    def __init__(self, t, p, maxlike_file, make_params, get_linear_bias):
+    def __init__(self, t, p, root_path, maxlike_file, mp, glb):
 
-        super(analyse_maxlike, self).__init__(t, p, make_params, get_linear_bias)
+        super(analyse_maxlike, self).__init__(t, p)
 
         # construct hierarchy of plot folders
-        plot_folder = os.path.join('plots')
+        plot_folder = os.path.join(root_path, 'plots')
 
         if not os.path.exists(plot_folder):
             try:
@@ -211,7 +196,6 @@ class analyse_maxlike(analyse_core):
         # READ OUTPUT FILE GENERATED BY MAXLIKE
 
         # this will consist of a single line giving the best-fit values of all parameters, including derived ones
-        maxlike_path = os.path.join('output', maxlike_file)
 
         # cache OrderedDict of model parameters
         model_params = self.get_model_params()
@@ -219,14 +203,14 @@ class analyse_maxlike(analyse_core):
         # note p.keys() must return a list that is ordered in the correct way
         input_columns = list(p.keys()) + list(model_params.keys()) + ['like']
 
-        table = ascii.read(maxlike_path, Reader=ascii.NoHeader, names=input_columns)
+        table = ascii.read(maxlike_file, Reader=ascii.NoHeader, names=input_columns)
 
         row = table[0]
 
         r = {p: row[p] for p in list(p.keys() + list(model_params.keys()))}
 
         self.bestfit = r
-        self.best_chisquare = self.compute_chisquare(r)
+        self.best_chisquare = self.compute_chisquare(r, mp, glb)
 
 
     def get_fit_point(self):
@@ -235,11 +219,11 @@ class analyse_maxlike(analyse_core):
 
 
 
-def write_summary(analysis_list, out_file):
+def write_summary(analysis_list, root_path, out_file, mp, glb):
 
     # filenames for GetDist chain-like output
-    getdist_param_file = os.path.join('plots', out_file + '.paramnames')
-    getdist_chain_file = os.path.join('plots', out_file + '.txt')
+    getdist_param_file = os.path.join(root_path, 'plots', out_file + '.paramnames')
+    getdist_chain_file = os.path.join(root_path, 'plots', out_file + '.txt')
 
     # parameter lists from all realizations should be the same
     params, model_params = __get_parameter_lists(analysis_list)
@@ -287,8 +271,6 @@ def write_summary(analysis_list, out_file):
             row = rlz.get_fit_point()
             tools = rlz.get_tools()
 
-            mp, glb = rlz.get_param_tools()
-
             param_dict = mp(row)
             coeffs = tools.make_coeff_dict(param_dict)
             P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, row, glb(row))
@@ -326,18 +308,16 @@ def __get_parameter_lists(analysis_list):
     return params, model_params
 
 
-def write_Pell(list, out_file):
+def write_Pell(list, root_path, out_file, mp, glb):
 
     for real in list:
 
         rlz = list[real]
 
-        p = os.path.join('plots', out_file + '_' + real + '_Pell.csv')
+        p = os.path.join(root_path, 'plots', out_file + '_' + real + '_Pell.csv')
 
         bestfit = rlz.get_fit_point()
         tools = rlz.get_tools()
-
-        mp, glb = rlz.get_param_tools()
 
         params = mp(bestfit)
         coeffs = tools.make_coeff_dict(params)
