@@ -12,9 +12,9 @@ regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
 inis = {'r01': 'r01.ini', 'r02': 'r02.ini', 'r03': 'r03.ini',
-          'r04': 'r04.ini', 'r05': 'r05.ini', 'r06': 'r06.ini',
-          'r07': 'r07.ini', 'r08': 'r08.ini', 'r09': 'r09.ini',
-          'r10': 'r10.ini'}
+        'r04': 'r04.ini', 'r05': 'r05.ini', 'r06': 'r06.ini',
+        'r07': 'r07.ini', 'r08': 'r08.ini', 'r09': 'r09.ini',
+        'r10': 'r10.ini'}
 
 outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r04': 'r04.txt', 'r05': 'r05.txt', 'r06': 'r06.txt',
@@ -85,8 +85,10 @@ for b in bias_models:
 
         for r in RSD_models:
 
-            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
-            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+            for reg in regions:
+
+                ini_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], inis[reg])
+                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
     st = os.stat(script)
     os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -101,8 +103,10 @@ for r in RSD_models:
 
         for b in bias_models:
 
-            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
-            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+            for reg in regions:
+
+                ini_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], inis[reg])
+                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
     st = os.stat(script)
     os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -117,8 +121,10 @@ with open(script, "w") as f:
 
         for r in RSD_models:
 
-            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
-            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+            for reg in regions:
+
+                ini_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], inis[reg])
+                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
 st = os.stat(script)
 os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -133,8 +139,10 @@ for b in bias_models:
 
         with open(script, "w") as f:
 
-            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
-            f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=config_file))
+            for reg in regions:
+
+                ini_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], inis[reg])
+                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
         st = os.stat(script)
         os.chmod(script, st.st_mode | stat.S_IEXEC)
