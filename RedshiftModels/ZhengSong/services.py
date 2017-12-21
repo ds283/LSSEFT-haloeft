@@ -1,4 +1,4 @@
-import ExpFoG
+from RedshiftModels import ExpFoG
 
 
 class theory(ExpFoG.theory):

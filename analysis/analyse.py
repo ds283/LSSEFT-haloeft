@@ -4,11 +4,6 @@ import os
 from getdist import mcsamples as mcs
 from getdist import plots as gdp
 
-import haloeft as heft
-
-import WizCOLA
-import EFT
-
 
 class analyse_core(object):
 
@@ -152,7 +147,7 @@ class analyse_cosmosis(analyse_core):
 
         else:
 
-            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_path, o=getdist_chain_file)
+            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_file, o=getdist_chain_file)
 
 
         # IMPORT CONVERTED CHAIN FILES USING GETDIST

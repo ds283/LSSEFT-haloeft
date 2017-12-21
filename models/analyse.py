@@ -6,7 +6,11 @@ import os
 import importlib
 
 import WizCOLA
-import EFT
+
+from RedshiftModels import EFT
+from RedshiftModels import Kaiser
+from RedshiftModels import ZhengSong
+
 import haloeft as heft
 
 from analysis import analyse as asy
@@ -30,18 +34,31 @@ mixing_params = None
 stochastic_params = None
 
 
-def f(region_tag, file, path, ptools):
+def f(region_tag, file_name, root_path, ptools):
 
     try:
 
-        config = make_config_block(numbers[region_tag])
+        if 'Halofit' in root_path:
+            config = make_config_block(numbers[region_tag], True)
+        else:
+            config = make_config_block(numbers[region_tag], False)
+
         ks = WizCOLA.ksamples(config)
         data = WizCOLA.products(config, ks)
-        theory = EFT.theory(config, ks)
 
-        t = heft.tools(path, data, theory)
+        if 'EFT' in root_path:
+            theory = EFT.theory(config, ks)
+        elif 'Kaiser' in root_path:
+            theory = Kaiser.theory(config, ks)
+        elif 'ZS' in root_path or 'ZhengSong' in root_path:
+            theory = ZhengSong.theory(config, ks)
+        else:
+            print "Cannot deduce RSD model used by '{p}'".format(p=root_path)
+            raise RuntimeError
 
-        obj = asy.analyse_cosmosis(t, ptools.param_dict, path, file, outputs[region_tag],
+        t = heft.tools(root_path, data, theory)
+
+        obj = asy.analyse_cosmosis(t, ptools.param_dict, root_path, file_name, outputs[region_tag],
                                    ptools.make_params, ptools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
