@@ -44,21 +44,21 @@ for b in bias_models:
 
         for reg in regions:
 
-            ini_file = os.path.join(folder, inis[r])
+            ini_file = os.path.join(folder, inis[reg])
             common_file = os.path.join("LSSEFT-haloeft", "haloeft_common.ini")
-            config_file = os.path.join("LSSEFT-haloeft", bias_folders[b], RSD_folders[r], "config.ini")
-            output_file = os.path.join("LSSEFT-haloeft", bias_folders[b], RSD_folders[r], "output", outputs[r])
+            config_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "config.ini")
+            output_file = os.path.join("LSSEFT-haloeft", "models", bias_folders[b], RSD_folders[r], "output", outputs[reg])
 
             with open(ini_file, "w") as f:
 
-                f.write("[runtime]")
-                f.write("sampler = emcee")
-                f.write("")
-                f.write("%include {p}".format(p=common_file))
-                f.write("%include {p}".format(p=config_file))
-                f.write("")
-                f.write("[output]")
-                f.write("filename = {p}".format(p=config_file))
-                f.write("")
-                f.write("[HaloEFT]")
-                f.write("realization = {n}".format(n=numbers[r]))
+                f.write("[runtime]\n")
+                f.write("sampler = emcee\n")
+                f.write("\n")
+                f.write("%include {p}\n".format(p=common_file))
+                f.write("%include {p}\n".format(p=config_file))
+                f.write("\n")
+                f.write("[output]\n")
+                f.write("filename = {p}\n".format(p=output_file))
+                f.write("\n")
+                f.write("[HaloEFT]\n")
+                f.write("realization = {n}\n".format(n=numbers[reg]))
