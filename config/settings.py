@@ -4,4 +4,4 @@ ConvCeiling = 4.0
 
 PconvCeiling = 1E6
 
-LowSigmaSeries = 1E-3
+RSDSeriesSwitchover = 0.15
