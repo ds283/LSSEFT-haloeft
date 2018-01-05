@@ -169,7 +169,7 @@ class theory(object):
         f = self.data.f
         sigmav = values['sigmav']
         
-        ks = self.data.k_sample.WiggleZ_conv_ks
+        ks = self.data.k_sample.conv_ks
 
         # cache expensive transcendental functions
         xs = ks * f * sigmav

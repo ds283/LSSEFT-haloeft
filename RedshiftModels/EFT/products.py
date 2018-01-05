@@ -84,7 +84,7 @@ class database(object):
             self.__import_f(conn, data)
 
         # finally, construct stochastic counterterms
-        ks = self.k_sample.WiggleZ_conv_ks
+        ks = self.k_sample.conv_ks
         ksq = ks*ks
 
         d1_P0 = np.power(ks, 0)

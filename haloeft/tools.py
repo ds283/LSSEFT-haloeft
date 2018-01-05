@@ -26,7 +26,7 @@ class tools(base):
         # set up mask: we will gradually add True values to this as we step through the different
         # k-sample points that contribute to the final chi-square value
         # notice the mask is for just one P_ell individually, not the concatenated group (P0, P2, P4)
-        i_mask = np.array([False for i in xrange(len(self.data.k_sample.WiggleZ_mean_ks))])
+        i_mask = np.array([False for i in xrange(len(self.data.k_sample.mean_ks))])
 
         convolved_Pk = {}
         # cache convolved theory power spectra
@@ -131,9 +131,9 @@ class tools(base):
 
             # loop over each k sample point to be included in the analysis,
             # and then process its contribution for each region
-            for i in xrange(len(self.data.k_sample.WiggleZ_mean_ks)):
+            for i in xrange(len(self.data.k_sample.mean_ks)):
 
-                row = {'k': self.data.k_sample.WiggleZ_mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
+                row = {'k': self.data.k_sample.mean_ks[i], 'P0': P0[i], 'P2': P2[i], 'P4': P4[i]}
 
                 if i == 0:
                     row.update({'ireal': self.data.get_realization(), 'chisq': total_chisq, 'model': self.model_name})
