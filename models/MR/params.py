@@ -10,7 +10,8 @@ def make_params(plist):
     bs2 = plist['bs2']
     b3nl = plist['b3nl']
 
-    # the local model involves the combination bs2*s2/2 + 105*b3nl*(st + 8*delta*delta*delta/189)/16
+    # the McDonald & Roy model involves the combination bs2*s2/2 + 105*b3nl*(st + 8*delta*delta*delta/189)/32
+    # see eg. David's calculation "2018-01-11 - McDonald & Roy basis to Chan et al. basis"
 
     # now, s2 is defined as G2 + 2*delta*delta/3, so if bG2 is defined without a factor of 1/2 and
     # b2 is defined with a factor of 1/2
@@ -25,13 +26,13 @@ def make_params(plist):
     # so st = Gamma3/2 - (4/21) delta G2 in the EdS approximation (we don't strictly use this,
     # but we suppose this relation is still a reasonable approximation)
     # [note, delta = delta(1) + delta(2) + ... in Assassi et al.; see their Eq. (2.15)]
-    bGamma3 = 105.0 * b3nl / 32.0
+    bGamma3 = 105.0 * b3nl / 64.0
 
-    # net factor of bdG2 = (105/16)(-4/21) = -5/4
-    bdG2 = -5.0 * b3nl / 4.0
+    # net factor of bdG2 = (105/32)(-4/21) = -5/8
+    bdG2 = -5.0 * b3nl / 8.0
 
-    # b3 is defined with a factor of 1/6, so its net factor is 105 * (8/189) * (6/16) = 5/3
-    b3 = 5.0 * b3nl / 3.0
+    # b3 is defined with a factor of 1/6, so its net factor is 105 * (8/189) * (6/32) = 5/6
+    b3 = 5.0 * b3nl / 6.0
 
     # build coefficient dictionary
     params = {'b1_1': b1, 'b1_2': b1, 'b1_3': b1, 'b2_2': b2, 'b2_3': b2, 'b3': b3,
