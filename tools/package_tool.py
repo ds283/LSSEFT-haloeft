@@ -101,7 +101,7 @@ def package_LSSEFT_haloeft(package_dir, archive_file, version_string):
         archive.close()
 
 
-version = "2018_0"
+version = "2018_01"
 
 cwd = os.getcwd()
 package_dir = os.path.join(cwd, "..", "packages")
