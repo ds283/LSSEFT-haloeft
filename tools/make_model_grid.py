@@ -22,7 +22,7 @@ outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r10': 'r10.txt'}
 
 local_models_root = os.path.join("..", "models")
-deploy_common_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01")
+deploy_common_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01_Apollo")
 deploy_models_root = os.path.join(deploy_common_root, "models")
 
 for b in bias_models:
@@ -68,7 +68,7 @@ for b in bias_models:
 
 
 local_scripts_root = os.path.join("..", "scripts")
-deploy_model_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01", "models")
+deploy_model_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01_Apollo", "models")
 
 if not os.path.exists(local_scripts_root):
 
