@@ -22,8 +22,8 @@ outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r10': 'r10.txt'}
 
 deploy_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01_Apollo")
-cosmosis_executable = "./bin/cosmosis"
-MPI_processes = 8
+cosmosis_executable = "cosmosis"
+MPI_processes = 72
 
 local_models_root = os.path.join("..", "models")
 deploy_models_root = os.path.join(deploy_root, "models")
