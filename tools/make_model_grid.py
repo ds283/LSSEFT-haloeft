@@ -21,9 +21,10 @@ outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
           'r10': 'r10.txt'}
 
+deploy_root = os.path.join("LSSEFT-haloeft")
+
 local_models_root = os.path.join("..", "models")
-deploy_common_root = os.path.join("LSSEFT-haloeft")
-deploy_models_root = os.path.join(deploy_common_root, "models")
+deploy_models_root = os.path.join(deploy_root, "models")
 
 for b in bias_models:
 
@@ -48,7 +49,7 @@ for b in bias_models:
         for reg in regions:
 
             ini_file = os.path.join(local_folder, inis[reg])
-            common_file = os.path.join(deploy_common_root, "haloeft_common.ini")
+            common_file = os.path.join(deploy_root, "haloeft_common.ini")
             config_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], "config.ini")
             output_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], "output", outputs[reg])
 
@@ -68,7 +69,6 @@ for b in bias_models:
 
 
 local_scripts_root = os.path.join("..", "scripts")
-deploy_model_root = os.path.join("LSSEFT-haloeft", "models")
 
 if not os.path.exists(local_scripts_root):
 
@@ -90,7 +90,7 @@ for b in bias_models:
 
             for reg in regions:
 
-                ini_file = os.path.join(deploy_model_root, bias_folders[b], RSD_folders[r], inis[reg])
+                ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
                 f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
     st = os.stat(script)
@@ -108,7 +108,7 @@ for r in RSD_models:
 
             for reg in regions:
 
-                ini_file = os.path.join(deploy_model_root, bias_folders[b], RSD_folders[r], inis[reg])
+                ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
                 f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
     st = os.stat(script)
@@ -126,7 +126,7 @@ with open(script, "w") as f:
 
             for reg in regions:
 
-                ini_file = os.path.join(deploy_model_root, bias_folders[b], RSD_folders[r], inis[reg])
+                ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
                 f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
 st = os.stat(script)
@@ -144,7 +144,7 @@ for b in bias_models:
 
             for reg in regions:
 
-                ini_file = os.path.join(deploy_model_root, bias_folders[b], RSD_folders[r], inis[reg])
+                ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
                 f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
 
         st = os.stat(script)
