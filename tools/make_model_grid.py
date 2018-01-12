@@ -22,6 +22,8 @@ outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r10': 'r10.txt'}
 
 deploy_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01_Apollo")
+cosmosis_executable = "./bin/cosmosis"
+MPI_processes = 8
 
 local_models_root = os.path.join("..", "models")
 deploy_models_root = os.path.join(deploy_root, "models")
@@ -91,7 +93,7 @@ for b in bias_models:
             for reg in regions:
 
                 ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
-                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
+                f.write("mpiexec -n {np} {cosmosis} --mpi {config}\n".format(np=MPI_processes, cosmosis=cosmosis_executable, config=ini_file))
 
     st = os.stat(script)
     os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -109,7 +111,7 @@ for r in RSD_models:
             for reg in regions:
 
                 ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
-                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
+                f.write("mpiexec -n {np} {cosmosis} --mpi {config}\n".format(np=MPI_processes, cosmosis=cosmosis_executable, config=ini_file))
 
     st = os.stat(script)
     os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -127,7 +129,7 @@ with open(script, "w") as f:
             for reg in regions:
 
                 ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
-                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
+                f.write("mpiexec -n {np} {cosmosis} --mpi {config}\n".format(np=MPI_processes, cosmosis=cosmosis_executable, config=ini_file))
 
 st = os.stat(script)
 os.chmod(script, st.st_mode | stat.S_IEXEC)
@@ -145,7 +147,7 @@ for b in bias_models:
             for reg in regions:
 
                 ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
-                f.write("mpiexec -n 8 ./bin/cosmosis --mpi {config}\n".format(config=ini_file))
+                f.write("mpiexec -n {np} {cosmosis} --mpi {config}\n".format(np=MPI_processes, cosmosis=cosmosis_executable, config=ini_file))
 
         st = os.stat(script)
         os.chmod(script, st.st_mode | stat.S_IEXEC)
