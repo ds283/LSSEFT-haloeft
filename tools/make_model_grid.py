@@ -21,7 +21,7 @@ outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
           'r10': 'r10.txt'}
 
-deploy_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft_2018_01_Apollo")
+deploy_root = os.path.join("/", "home", "d", "ds", "ds283", "LSSEFT-haloeft", "LSSEFT-haloeft_2018_01_Apollo")
 cosmosis_executable = "cosmosis"
 MPI_processes = 72
 
