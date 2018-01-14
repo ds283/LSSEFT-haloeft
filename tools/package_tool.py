@@ -2,7 +2,8 @@ __author__ = 'ds283'
 
 import os
 import tarfile
-import subprocess
+
+import version as release
 
 
 def list_files(path):
@@ -71,6 +72,7 @@ def add_folder(tree_path, archive_path, archive):
             and dir_lower != 'output' \
             and dir_lower != 'plots' \
             and dir_lower != 'scripts' \
+            and dir_lower != 'job-scripts' \
             and dir_lower != 'packages' :
 
             tree_name = os.path.join(tree_path, dir)
@@ -103,14 +105,12 @@ def package_LSSEFT_haloeft(package_dir, archive_file, version_string):
         archive.close()
 
 
-version = "2018_01_Apollo"
-
 cwd = os.getcwd()
 package_dir = os.path.join(cwd, "..", "packages")
-version_dir = os.path.join(package_dir, version)
+version_dir = os.path.join(package_dir, release.version)
 
 # ensure packaging directory exists
 if not os.path.exists(version_dir):
     os.makedirs(version_dir)
 
-package_LSSEFT_haloeft(version_dir, "LSSEFT-haloeft" + "_" + version + ".tar.gz", version)
+package_LSSEFT_haloeft(version_dir, "LSSEFT-haloeft" + "_" + release.version + ".tar.gz", release.version)
