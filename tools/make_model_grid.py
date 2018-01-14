@@ -1,5 +1,6 @@
 import os
 import stat
+import datetime
 
 import deploy
 
@@ -33,6 +34,7 @@ deploy_models_root = os.path.join(deploy.deploy_root, "models")
 
 local_scripts_root = os.path.join("..", "scripts")
 local_jobs_root = os.path.join("..", "job-scripts")
+local_job_output_root = os.path.join("..", "job-output")
 
 
 def populate_region_ini_files():
@@ -111,22 +113,6 @@ def populate_RSD_config_files():
                 f.write("file = {file}\n".format(file=pipeline_file))
 
 
-def make_batch_scripts_directory():
-
-    if not os.path.exists(local_scripts_root):
-
-        try:
-            os.makedirs(local_scripts_root)
-        except OSError, e:
-            if e.errno != os.errno.EEXIST:
-                raise
-
-
-def write_shell_script_header(f):
-
-    f.write("#!/bin/sh\n")
-
-
 def write_mpiexec(f, b, r, reg):
 
     ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
@@ -135,16 +121,17 @@ def write_mpiexec(f, b, r, reg):
                                                                  config=ini_file))
 
 
-def populate_batch_bias_block():
+def populate_script_bias_block(root, header):
 
     # now generate shell scripts to do batch jobs -- organized by bias model:
     for b in bias_models:
 
-        script = os.path.join(local_scripts_root, "run-{b}".format(b=b))
+        leaf = "run-{b}".format(b=b)
+        script = os.path.join(root, leaf)
 
         with open(script, "w") as f:
 
-            write_shell_script_header(f)
+            header(f, leaf)
 
             for r in RSD_models:
 
@@ -156,16 +143,17 @@ def populate_batch_bias_block():
         os.chmod(script, st.st_mode | stat.S_IEXEC)
 
 
-def populate_batch_RSD_block():
+def populate_script_RSD_block(root, header):
 
     # now generate shell scripts to do batch jobs -- organized by RSD model:
     for r in RSD_models:
 
-        script = os.path.join(local_scripts_root, "run-{r}".format(r=r))
+        leaf = "run-{r}".format(r=r)
+        script = os.path.join(root, leaf)
 
         with open(script, "w") as f:
 
-            write_shell_script_header(f)
+            header(f, leaf)
 
             for b in bias_models:
 
@@ -177,18 +165,19 @@ def populate_batch_RSD_block():
         os.chmod(script, st.st_mode | stat.S_IEXEC)
 
 
-def populate_batch_bias_RSD():
+def populate_script_bias_RSD(root, header):
 
     # individual grid cell
     for b in bias_models:
 
         for r in RSD_models:
 
-            script = os.path.join(local_scripts_root, "run-{b}-{r}".format(b=b, r=r))
+            leaf = "run-{b}-{r}".format(b=b, r=r)
+            script = os.path.join(root, leaf)
 
             with open(script, "w") as f:
 
-                write_shell_script_header(f)
+                header(f, leaf)
 
                 for reg in regions:
 
@@ -198,14 +187,15 @@ def populate_batch_bias_RSD():
             os.chmod(script, st.st_mode | stat.S_IEXEC)
 
 
-def populate_batch_entire_grid():
+def populate_script_entire_grid(root, header):
 
     # now generate shell scripts to do batch jobs -- single script to run entire model grid
-    script = os.path.join(local_scripts_root, "run-grid")
+    leaf = "run-grid"
+    script = os.path.join(root, leaf)
 
     with open(script, "w") as f:
 
-        write_shell_script_header(f)
+        header(f, leaf)
 
         for b in bias_models:
 
@@ -219,16 +209,92 @@ def populate_batch_entire_grid():
     os.chmod(script, st.st_mode | stat.S_IEXEC)
 
 
+def populate_scripts(root, header):
+
+    populate_script_bias_block(root, header)
+    populate_script_RSD_block(root, header)
+
+    populate_script_bias_RSD(root, header)
+
+    populate_script_entire_grid(root, header)
+
+
+def make_batch_scripts_directory():
+
+    if not os.path.exists(local_scripts_root):
+
+        try:
+            os.makedirs(local_scripts_root)
+        except OSError, e:
+            if e.errno != os.errno.EEXIST:
+                raise
+
+
+def write_shell_script_header(f, leaf):
+
+    f.write("#!/bin/sh\n")
+    f.write("#\n")
+    f.write("# file: {f} written on {t}\n".format(f=leaf, t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
+
+
 def populate_batch_scripts():
 
     make_batch_scripts_directory()
 
-    populate_batch_bias_block()
-    populate_batch_RSD_block()
+    populate_scripts(local_scripts_root, write_shell_script_header)
 
-    populate_batch_bias_RSD()
 
-    populate_batch_entire_grid()
+def make_submission_scripts_directory():
+
+    if not os.path.exists(local_jobs_root):
+
+        try:
+            os.makedirs(local_jobs_root)
+        except OSError, e:
+            if e.errno != os.errno.EEXIST:
+                raise
+
+    if not os.path.exists(local_job_output_root):
+
+        try:
+            os.makedirs(local_job_output_root)
+        except OSError, e:
+            if e.errno != os.errno.EEXIST:
+                raise
+
+
+def write_job_script_header(f, leaf):
+
+    f.write("#!/bin/bash\n")
+    f.write("#$ -N {n}\n".format(n=leaf))
+    f.write("#$ -pe openmpi {n}\n".format(n=deploy.MPI_processes))
+    f.write("#$ -q mps.q\n")
+    f.write("#$ -jc mps.medium\n")
+    f.write("#$ -R y\n")
+    f.write("#$ -S /bin/bash\n")
+
+    output_folder = os.path.join(deploy.deploy_root, "job-output")
+    f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
+    f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
+
+    f.write("#$ -M {email}\n".format(email=deploy.email))
+    f.write("#$ -m be\n")
+    f.write("#$ -cwd\n")
+    f.write("#\n")
+
+    f.write("# file: {f} written on {t}\n".format(f=leaf, t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
+    f.write("\n")
+
+    f.write("# configure and load modules\n")
+    f.write(". /etc/profile.d/modules.sh\n")
+    f.write("\n")
+
+
+def populate_job_submission_scripts():
+
+    make_submission_scripts_directory()
+
+    populate_scripts(local_jobs_root, write_job_script_header)
 
 
 populate_region_ini_files()
@@ -236,3 +302,5 @@ populate_region_ini_files()
 populate_RSD_config_files()
 
 populate_batch_scripts()
+
+populate_job_submission_scripts()
