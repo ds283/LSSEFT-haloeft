@@ -288,6 +288,12 @@ def write_job_script_header(f, leaf):
     f.write("# configure and load modules\n")
     f.write(". /etc/profile.d/modules.sh\n")
     f.write("\n")
+    f.write("# add cosmosis module\n")
+    f.write("module add cosmosis\n")
+    f.write("source /cm/shared/apps/cosmosis/config/setup-cosmosis2\n")
+    f.write("\n")
+    f.write("export PYTHONPATH=$PYTHONPATH:{f}\n".format(f=deploy.deploy_root))
+    f.write("\n")
 
 
 def populate_job_submission_scripts():
