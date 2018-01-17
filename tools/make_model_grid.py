@@ -263,44 +263,75 @@ def make_submission_scripts_directory():
                 raise
 
 
-def write_job_script_header(f, leaf):
+def write_submission_script(root, count):
 
-    f.write("#!/bin/bash\n")
-    f.write("#$ -N {n}\n".format(n=leaf))
-    f.write("#$ -pe openmpi {n}\n".format(n=deploy.MPI_processes))
-    f.write("#$ -q mps.q\n")
-    f.write("#$ -jc mps.medium\n")
-    f.write("#$ -R y\n")
-    f.write("#$ -S /bin/bash\n")
+    filename = os.path.join(root, "LSSEFT-haloeft.sh")
 
-    output_folder = os.path.join(deploy.deploy_root, "job-output")
-    f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
-    f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
+    with open(filename, "w") as f:
 
-    f.write("#$ -M {email}\n".format(email=deploy.email))
-    f.write("#$ -m be\n")
-    f.write("#$ -cwd\n")
-    f.write("#\n")
+        f.write("#!/bin/bash\n")
+        f.write("#$ -N LSSEFT-haloeft\n")
+        f.write("#$ -pe openmpi {n}\n".format(n=deploy.MPI_processes))
+        f.write("#$ -q mps.q\n")
+        f.write("#$ -jc mps.medium\n")
+        f.write("#$ -R y\n")
+        f.write("#$ -S /bin/bash\n")
 
-    f.write("# file: {f} written on {t}\n".format(f=leaf, t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
-    f.write("\n")
+        output_folder = os.path.join(deploy.deploy_root, "job-output")
+        f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
+        f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID\n".format(f=output_folder))
 
-    f.write("# configure and load modules\n")
-    f.write(". /etc/profile.d/modules.sh\n")
-    f.write("\n")
-    f.write("# add cosmosis module\n")
-    f.write("module add cosmosis\n")
-    f.write("source /cm/shared/apps/cosmosis/config/setup-cosmosis2\n")
-    f.write("\n")
-    f.write("export PYTHONPATH=$PYTHONPATH:{f}\n".format(f=deploy.deploy_root))
-    f.write("\n")
+        f.write("#$ -M {email}\n".format(email=deploy.email))
+        f.write("#$ -m be\n")
+        f.write("#$ -cwd\n")
+        f.write("#$ -t 1-{n}\n".format(n=count))
+        f.write("#\n")
+
+        f.write("# written on {t}\n".format(t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
+        f.write("\n")
+
+        f.write("# configure and load modules\n")
+        f.write(". /etc/profile.d/modules.sh\n")
+        f.write("\n")
+        f.write("# add cosmosis module\n")
+        f.write("module add cosmosis2\n")
+        f.write("source /cm/shared/apps/cosmosis2/config/setup-cosmosis\n")
+        f.write("\n")
+        f.write("export PYTHONPATH=$PYTHONPATH:{f}\n".format(f=deploy.deploy_root))
+        f.write("\n")
+        f.write("mpiexec -n {np} {cosmosis} --mpi `sed -n -e \"$SGE_TASK_ID p\" ini_file_list.txt`\n".format(
+            np=deploy.MPI_processes,
+            cosmosis=deploy.cosmosis_executable))
+
+
+def write_ini_file_list(root):
+
+    file = os.path.join(root, "ini_file_list.txt")
+
+    count = 0
+
+    with open(file, "w") as f:
+
+        for b in bias_models:
+
+            for r in RSD_models:
+
+                for reg in regions:
+
+                    ini_file = os.path.join(deploy_models_root, bias_folders[b], RSD_folders[r], inis[reg])
+
+                    f.write("{f}\n".format(f=ini_file))
+                    count += 1
+
+    return count
 
 
 def populate_job_submission_scripts():
 
     make_submission_scripts_directory()
 
-    populate_scripts(local_jobs_root, write_job_script_header)
+    count = write_ini_file_list(local_jobs_root)
+    write_submission_script(local_jobs_root, count)
 
 
 populate_region_ini_files()
