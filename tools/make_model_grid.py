@@ -285,6 +285,7 @@ def write_submission_script(root, count):
         f.write("#$ -m be\n")
         f.write("#$ -cwd\n")
         f.write("#$ -t 1-{n}\n".format(n=count))
+        f.write("#$ -tc 2\n")
         f.write("#\n")
 
         f.write("# written on {t}\n".format(t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
