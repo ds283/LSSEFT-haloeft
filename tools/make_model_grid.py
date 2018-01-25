@@ -300,7 +300,12 @@ def write_submission_script(root, count):
         f.write("module add cosmosis2\n")
         f.write("source /cm/shared/apps/cosmosis2/config/setup-cosmosis\n")
         f.write("\n")
-        f.write("export PYTHONPATH=$PYTHONPATH:{f}\n".format(f=deploy.deploy_root))
+
+        if deploy.local_site is not None:
+            f.write("export PYTHONPATH=$PYTHONPATH:{f1}:{f2}\n".format(f1=deploy.local_site, f2=deploy.deploy_root))
+        else:
+            f.write("export PYTHONPATH=$PYTHONPATH:{f}\n".format(f=deploy.deploy_root))
+
         f.write("\n")
         f.write("mpiexec -n {np} {cosmosis} --mpi `sed -n -e \"$SGE_TASK_ID p\" ini_file_list.txt`\n".format(
             np=deploy.MPI_processes,
