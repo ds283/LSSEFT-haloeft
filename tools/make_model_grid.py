@@ -278,8 +278,8 @@ def write_submission_script(root, count):
         f.write("#$ -S /bin/bash\n")
 
         output_folder = os.path.join(deploy.deploy_root, "job-output")
-        f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID-$SGE_TASK_ID\n".format(f=output_folder))
-        f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID-$SGE_TASK_ID\n".format(f=output_folder))
+        f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID.$SGE_TASK_ID\n".format(f=output_folder))
+        f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID.$SGE_TASK_ID\n".format(f=output_folder))
 
         f.write("#$ -M {email}\n".format(email=deploy.email))
         f.write("#$ -m be\n")

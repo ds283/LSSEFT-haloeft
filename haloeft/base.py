@@ -1,4 +1,5 @@
 import numpy as np
+import cpuinfo
 
 
 class base(object):
@@ -7,6 +8,11 @@ class base(object):
 
         self.data = data
         self.theory = theory
+
+        cpu_data = cpuinfo.get_cpu_info()
+
+        print 'LSSEFT-haloeft running on {brand} at {hz_real} (advertised {hz_adv})'.format(
+            brand=cpu_data['brand'], hz_real=cpu_data['hz_actual'], hz_adv=cpu_data['hz_advertised'])
 
 
     def make_coeff_dict(self, params):
