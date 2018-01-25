@@ -271,6 +271,10 @@ def write_submission_script(root, count):
 
         f.write("#!/bin/bash\n")
         f.write("#$ -N LSSEFT-haloeft\n")
+
+        f.write("#$ -t 1-{n}\n".format(n=count))
+        f.write("#$ -tc 2\n")
+
         f.write("#$ -pe openmpi {n}\n".format(n=deploy.MPI_processes))
         f.write("#$ -q mps.q\n")
         f.write("#$ -jc mps.medium\n")
@@ -278,14 +282,12 @@ def write_submission_script(root, count):
         f.write("#$ -S /bin/bash\n")
 
         output_folder = os.path.join(deploy.deploy_root, "job-output")
-        f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID.$SGE_TASK_ID\n".format(f=output_folder))
-        f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID.$SGE_TASK_ID\n".format(f=output_folder))
+        f.write("#$ -e {f}/err_$JOB_NAME.$JOB_ID.$TASK_ID\n".format(f=output_folder))
+        f.write("#$ -o {f}/out_$JOB_NAME.$JOB_ID.$TASK_ID\n".format(f=output_folder))
 
         f.write("#$ -M {email}\n".format(email=deploy.email))
         f.write("#$ -m be\n")
         f.write("#$ -cwd\n")
-        f.write("#$ -t 1-{n}\n".format(n=count))
-        f.write("#$ -tc 2\n")
         f.write("#\n")
 
         f.write("# written on {t}\n".format(t=datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S")))
