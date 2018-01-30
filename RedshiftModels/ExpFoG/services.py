@@ -23,7 +23,7 @@ class theory(object):
 
     def __ell_0(self, x):
 
-        if np.all(abs(x) > settings.RSDSeriesSwitchover):
+        if abs(x) > settings.RSDSeriesSwitchover:
 
             expx = np.exp(-x * x)
             erfx = erf(x)
