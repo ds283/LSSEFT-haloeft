@@ -23,7 +23,7 @@ class theory(object):
 
     def __ell_0(self, x):
 
-        if np.all(abs(x) > settings.RSDSeriesSwitchover):
+        if abs(x) > settings.RSDSeriesSwitchover:
 
             expx = np.exp(-x * x)
             erfx = erf(x)
@@ -155,6 +155,10 @@ class theory(object):
 
     def __dotp(self, a, b):
 
+        # a and b are expected to be matrices, so the produce a[i]*b[i] will extract the ith row from each
+        # matrix and perform element-by-element multiplication along the row.
+        # Then we sum over rows.
+
         zip = [ a[i]*b[i] for i in xrange(len(a))]
 
         P = zip[0].copy()
@@ -174,13 +178,48 @@ class theory(object):
         # cache expensive transcendental functions
         xs = ks * f * sigmav
 
+        # First we assemble a matrix of transformation coefficients f_{n,ell} for each k sample point,
+        # translated to x = k f sigma
+        # The coefficients are defined by
+        #    f_{n, ell}(x) = (2ell + 1)/2 Integrate[exp(-x^2 mu^2) mu^n LegP(ell, mu)]
+
         ell0_coeff = np.transpose(np.array([self.__ell_0(x) for x in xs]))
         ell2_coeff = np.transpose(np.array([self.__ell_2(x) for x in xs]))
         ell4_coeff = np.transpose(np.array([self.__ell_4(x) for x in xs]))
 
+        # Each of these (_after_ the transposition operation) is a numpy array of the form, eg. for ell0_coeff
+        # f_{0,0}(x_1)  f_{0,0}(x_2)  f_{0,0}(x_3)  ...  f_{0,0}(x_n)
+        # f_{2,0}(x_1)  f_{2,0}(x_2)  f_{2,0}(x_3)  ...  f_{2,0}(x_n)
+        # ...
+        # f_{8,0}(x_1)  f_{8,0}(x_2)  f_{8,0}(x_3)  ...  f_{8,0}(x_n)
+        # where x_1, x_2, ..., x_n are the k-sample points expressed in terms of x.
+
+        # next we construct lists of terms to be added to produce the final multipole power spectra
+        # each term coeffs[key] * data is a numpy array giving the powers of mu for a specific
+        # bias label at all k sample points, of the form
+        # mu0(x_1)  mu0(x_2)  mu0(x_3)  ...  mu0(x_n)
+        # mu2(x_1)  mu2(x_2)  mu2(x_3)  ...  mu2(x_n)
+        # ...
+        # mu8(x_1)  mu8(x_2)  mu8(x_3)  ...  mu8(x_n)
+
         zip0 = [self.__dotp(ell0_coeff, coeffs[key] * data) for key, data in self.data.payload.iteritems()]
         zip2 = [self.__dotp(ell2_coeff, coeffs[key] * data) for key, data in self.data.payload.iteritems()]
         zip4 = [self.__dotp(ell4_coeff, coeffs[key] * data) for key, data in self.data.payload.iteritems()]
+
+        # the __dotp() function performs a dot product along the first axis of each argument, which is the
+        # row axis of each matrix
+        # So the dot product will produce a sum of terms of the form
+        #   [ f_{0,0}(x_1) mu0(x_1)  f_{0,0}(x_2) mu0(x_2)  f_{0,0}(x_3) mu0(x_3)  ...  f_{0,0}(x_n) mu0(x_n) ]
+        #   +
+        #   [ f_{2,0}(x_1) mu2(x_1)  f_{2,0}(x_2) mu2(x_2)  f_{2,0}(x_3) mu2(x_3)  ...  f_{2,0}(x_n) mu2(x_n) ]
+        #   + ... +
+        #   [ f_{8,0}(x_1) mu8(x_1)  f_{8,0}(x_2) mu8(x_2)  f_{8,0}(x_3) mu8(x_3)  ...  f_{8,0}(x_n) mu8(x_n) ]
+        # after summing these we get a single vector containing the elements
+        #   [ P_0(x_1)  P_0(x_2)  P_0(x_3)  ...  P_0(x_n) ]
+        # and likewise for the other multipoles
+
+        # Finally, we sum over all the terms produced in this way, which is a sum over all the different
+        # bias coefficients that can appear in the power spectra
 
         P0 = zip0[0].copy()
         for a in zip0[1:]:
