@@ -9,7 +9,7 @@ import WizCOLA
 
 from RedshiftModels import EFT
 from RedshiftModels import Kaiser
-from RedshiftModels import ZhengSong
+from RedshiftModels import OneLoop
 
 import haloeft as heft
 
@@ -50,8 +50,8 @@ def f((region_tag, file_name, root_path, params_module)):
             theory = EFT.theory(config, ks)
         elif 'Kaiser' in root_path:
             theory = Kaiser.theory(config, ks)
-        elif 'ZS' in root_path or 'ZhengSong' in root_path:
-            theory = ZhengSong.theory(config, ks)
+        elif 'OneLoop' in root_path or 'OneLoop' in root_path:
+            theory = OneLoop.theory(config, ks)
         else:
             print "Cannot deduce RSD model used by '{p}'".format(p=root_path)
             raise RuntimeError

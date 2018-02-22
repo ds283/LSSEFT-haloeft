@@ -1,7 +1,7 @@
 import pipeline as cp
 
 import WizCOLA
-import RedshiftModels.ZhengSong as ZhengSong
+import RedshiftModels.OneLoop as ZhengSong
 
 
 class pipeline(cp.cosmosis_pipeline):
@@ -15,7 +15,7 @@ class pipeline(cp.cosmosis_pipeline):
         data = WizCOLA.products(my_config, ks)
 
         # build theory container
-        theory = ZhengSong.theory(my_config, ks)
+        theory = OneLoop.theory(my_config, ks)
 
         # call base class constructor
         super(pipeline, self).__init__(my_name, data, theory)

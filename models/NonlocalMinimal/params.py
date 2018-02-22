@@ -20,4 +20,5 @@ def make_params(plist):
 
 
 def get_linear_bias(plist):
+
     return plist['b1_1']

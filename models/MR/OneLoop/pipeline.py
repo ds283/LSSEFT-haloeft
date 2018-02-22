@@ -1,9 +1,9 @@
 from cosmosis.runtime.declare import declare_module
 from cosmosis.datablock import names as section_names
 
-import haloeft.ZhengSong as ZhengSong
+import haloeft.OneLoop as ZhengSong
 
-import models.linear.params as lin
+import models.MR.params as MR
 
 
 class pipeline(ZhengSong.pipeline):
@@ -20,8 +20,11 @@ class pipeline(ZhengSong.pipeline):
 
         # extract parameters from datablock
         b1 = block['bias_parameters', 'b1']
+        b2 = block['bias_parameters', 'b2']
+        bs2 = block['bias_parameters', 'bs2']
+        b3nl = block['bias_parameters', 'b3nl']
 
-        params = lin.make_params({'b1': b1})
+        params = MR.make_params({'b1': b1, 'b2': b2, 'bs2': bs2, 'b3nl': b3nl})
 
         return super(pipeline, self).compute(block, params, b1, self.likes)
 

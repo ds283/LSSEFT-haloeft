@@ -1,12 +1,12 @@
 from cosmosis.runtime.declare import declare_module
 from cosmosis.datablock import names as section_names
 
-import haloeft.Kaiser as Kaiser
+import haloeft.EFT as EFT
 
-import models.full.params as fp
+import models.NonlocalMinimal.params as fp
 
 
-class pipeline(Kaiser.pipeline):
+class pipeline(EFT.pipeline):
 
     likes = section_names.likelihoods
 

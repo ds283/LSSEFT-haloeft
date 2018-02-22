@@ -4,13 +4,24 @@ import datetime
 
 import deploy
 
-bias_models = [ "coevolution", "full", "linear", "MR" ]
-RSD_models = [ "EFT", "KaiserHalofit", "KaiserTree", "ZhengSong" ]
+bias_models = [ "coevolution", "NonlocalMinimal", "NonlocalAll", "linear", "MR" ]
+RSD_models = [ "EFT", "KaiserHalofit", "KaiserTree", "OneLoop" ]
 
-bias_folders = { "coevolution": "coevolution", "full": "full", "linear": "linear", "MR": "MR" }
-RSD_folders = { "EFT": "EFT", "KaiserHalofit": "KaiserHalofit", "KaiserTree": "KaiserTree", "ZhengSong": "ZS" }
-RSD_config_files = { "EFT": "EFT_common.ini", "KaiserHalofit": "KaiserHalofit_common.ini",
-                     "KaiserTree": "KaiserTree_common.ini", "ZhengSong": "ZhengSong_common.ini" }
+bias_folders = { "coevolution": "coevolution",
+                 "NonlocalMinimal": "NonlocalMinimal",
+                 "NonlocalAll": "NonlocalAll",
+                 "linear": "linear",
+                 "MR": "MR" }
+
+RSD_folders = { "EFT": "EFT",
+                "KaiserHalofit": "KaiserHalofit",
+                "KaiserTree": "KaiserTree",
+                "OneLoop": "OneLoop" }
+
+RSD_config_files = { "EFT": "EFT_common.ini",
+                     "KaiserHalofit": "KaiserHalofit_common.ini",
+                     "KaiserTree": "KaiserTree_common.ini",
+                     "OneLoop": "OneLoop_common.ini" }
 
 regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
@@ -69,7 +80,7 @@ def populate_region_ini_files():
                 with open(ini_file, "w") as f:
 
                     f.write("[runtime]\n")
-                    f.write("sampler = emcee\n")
+                    f.write("sampler = {s}\n".format(s=deploy.sampler))
                     f.write("\n")
                     f.write("%include {p}\n".format(p=common_file))
                     f.write("%include {p}\n".format(p=config_file))
