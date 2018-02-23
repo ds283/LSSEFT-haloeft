@@ -28,11 +28,11 @@ class pipeline(OneLoop.pipeline):
         bG2_2 = block['bias_parameters', 'bG2_2']
         bG2_3 = block['bias_parameters', 'bG2_3']
         bdG2 = block['bias_parameters', 'bdG2']
-        bGamma_3 = block['bias_parameters', 'bGamma_3']
+        bGamma3 = block['bias_parameters', 'bGamma3']
 
         # build coefficient dictionary
         params = fp.make_params({'b1_1': b1_1, 'b1_2': b1_2, 'b1_3': b1_3, 'b2_2': b2_2, 'b2_3': b2_3,
-                                 'b3': b3, 'bG2_2': bG2_2, 'bG2_3': bG2_3, 'bdG2': bdG2, 'bGamma_3': bGamma_3})
+                                 'b3': b3, 'bG2_2': bG2_2, 'bG2_3': bG2_3, 'bdG2': bdG2, 'bGamma3': bGamma3})
 
         return super(pipeline, self).compute(block, params, b1_1, self.likes)
 

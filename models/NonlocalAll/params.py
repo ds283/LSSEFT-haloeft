@@ -9,7 +9,7 @@ param_dict = OrderedDict([('b1_1', 'b_1^{(1)}'),
                           ('bG2_2', 'b_{G_2}^{(2)}'),
                           ('bG2_3', 'b_{G_2}^{(3)}'),
                           ('bdG2', 'b_{\\delta G_2}'),
-                          ('bGamma_3', 'b_{\\Gamma_3}')])
+                          ('bGamma3', 'b_{\\Gamma_3}')])
 
 
 def make_params(plist):
