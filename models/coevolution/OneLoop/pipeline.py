@@ -1,7 +1,7 @@
 from cosmosis.runtime.declare import declare_module
 from cosmosis.datablock import names as section_names
 
-import haloeft.ZhengSong as ZhengSong
+import haloeft.OneLoop as ZhengSong
 
 import models.coevolution.params as coevo
 
