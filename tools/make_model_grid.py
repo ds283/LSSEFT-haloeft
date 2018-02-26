@@ -23,19 +23,22 @@ RSD_config_files = { "EFT": "EFT_common.ini",
                      "KaiserTree": "KaiserTree_common.ini",
                      "OneLoop": "OneLoop_common.ini" }
 
-realizations = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
+realizations = ['ensemble', 'r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
-realization_numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
+realization_numbers = {'ensemble': 0, 'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5,
+                       'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-inis = {'r01': 'r01.ini', 'r02': 'r02.ini', 'r03': 'r03.ini',
+inis = {'ensemble': 'ensemble.ini',
+        'r01': 'r01.ini', 'r02': 'r02.ini', 'r03': 'r03.ini',
         'r04': 'r04.ini', 'r05': 'r05.ini', 'r06': 'r06.ini',
         'r07': 'r07.ini', 'r08': 'r08.ini', 'r09': 'r09.ini',
         'r10': 'r10.ini'}
 
-outputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
-          'r04': 'r04.txt', 'r05': 'r05.txt', 'r06': 'r06.txt',
-          'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
-          'r10': 'r10.txt'}
+outputs = {'ensemble': 'ensemble.txt',
+           'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
+           'r04': 'r04.txt', 'r05': 'r05.txt', 'r06': 'r06.txt',
+           'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
+           'r10': 'r10.txt'}
 
 
 # build global paths
