@@ -63,7 +63,7 @@ class base(object):
 
     def compute_likelihood(self, P0, P2, P4, type='fit'):
 
-        # sum likelihood over all regions
+        # sum likelihood over all realizations
         lik = sum([self.__compute_region_likelihood(region, P0, P2, P4, type) for region in self.data.regions])
 
         return lik

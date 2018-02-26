@@ -57,7 +57,7 @@ class tools(base):
                 # zero accumulator for chi-square
                 chisq = 0.0
 
-                # loop over all data regions:
+                # loop over all data realizations:
                 for r in self.data.regions:
                     # extract data products for this region
                     means = self.data.fit_means[r]
@@ -140,7 +140,7 @@ class tools(base):
                 else:
                     row.update({'ireal': -99, 'chisq': -99, 'model': '-'})
 
-                # initialize accumulators used to sum over all regions
+                # initialize accumulators used to sum over all realizations
                 P0_theory_tot = 0
                 P2_theory_tot = 0
                 P4_theory_tot = 0
@@ -165,7 +165,7 @@ class tools(base):
                 P2_Delta_tot = 0
                 P4_Delta_tot = 0
 
-                # loop over regions
+                # loop over realizations
                 for r in self.data.regions:
                     means = self.data.raw_means[r]
                     variances = self.data.raw_variance[r]

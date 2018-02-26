@@ -17,16 +17,19 @@ from analysis import analyse as asy
 from analysis.config import make_config_block
 
 
-regions = ['r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
+realizations = ['ensemble', 'r01', 'r02', 'r03', 'r04', 'r05', 'r06', 'r07', 'r08', 'r09', 'r10']
 
-numbers = {'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5, 'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
+realization_numbers = {'ensemble': 0, 'r01': 1, 'r02': 2, 'r03': 3, 'r04': 4, 'r05': 5,
+                       'r06': 6, 'r07': 7, 'r08': 8, 'r09': 9, 'r10': 10}
 
-inputs = {'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
+inputs = {'ensemble': 'ensemble.txt',
+          'r01': 'r01.txt', 'r02': 'r02.txt', 'r03': 'r03.txt',
           'r04': 'r04.txt', 'r05': 'r05.txt', 'r06': 'r06.txt',
           'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
           'r10': 'r10.txt'}
 
-outputs = {'r01': 'r01', 'r02': 'r02', 'r03': 'r03', 'r04': 'r04',
+outputs = {'ensemble': 'ensemble.txt',
+           'r01': 'r01', 'r02': 'r02', 'r03': 'r03', 'r04': 'r04',
            'r05': 'r05', 'r06': 'r06', 'r07': 'r07', 'r08': 'r08',
            'r09': 'r09', 'r10': 'r10'}
 
@@ -34,14 +37,14 @@ mixing_params = None
 stochastic_params = None
 
 
-def f((region_tag, file_name, root_path, params_module)):
+def f((realization_tag, file_name, root_path, params_module)):
 
     try:
 
         if 'Halofit' in root_path:
-            config = make_config_block(numbers[region_tag], True)
+            config = make_config_block(realization_numbers[realization_tag], True)
         else:
-            config = make_config_block(numbers[region_tag], False)
+            config = make_config_block(realization_numbers[realization_tag], False)
 
         ks = WizCOLA.ksamples(config)
         data = WizCOLA.products(config, ks)
@@ -73,7 +76,7 @@ def f((region_tag, file_name, root_path, params_module)):
 
         raise e
 
-    return region_tag, obj
+    return realization_tag, obj
 
 
 if __name__ == '__main__':
@@ -105,18 +108,18 @@ if __name__ == '__main__':
 
         # check which region files exist
         output_path = os.path.join(path, 'output')
-        region_files = []
+        realization_files = []
 
-        for r in regions:
+        for real in realizations:
 
-            file = os.path.join(output_path, inputs[r])
+            file = os.path.join(output_path, inputs[real])
 
             if os.path.exists(file):
 
-                region_files.append((r, file, path, params_module))
-                print "** added region output '{p}' to analysis list".format(p=file)
+                realization_files.append((real, file, path, params_module))
+                print "** added realization output '{p}' to analysis list".format(p=file)
 
-        if len(region_files) > 0:
+        if len(realization_files) > 0:
 
             # list will hold the analysis objects for each file
             obj_list = OrderedDict()
@@ -125,9 +128,9 @@ if __name__ == '__main__':
             p = mp.Pool()
 
             # build analysis objects for each file we detected
-            for r, obj in p.map(f, region_files):
+            for real, obj in p.map(f, realization_files):
 
-                obj_list[r] = obj
+                obj_list[real] = obj
 
             p.close()
 
@@ -138,4 +141,4 @@ if __name__ == '__main__':
 
         else:
 
-            print '** did not find any region outputs to analyse'
+            print '** did not find any realization outputs to analyse'
