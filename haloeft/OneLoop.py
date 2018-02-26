@@ -1,7 +1,7 @@
 import pipeline as cp
 
 import WizCOLA
-import RedshiftModels.OneLoop as ZhengSong
+import RedshiftModels.OneLoop as OneLoop
 
 
 class pipeline(cp.cosmosis_pipeline):

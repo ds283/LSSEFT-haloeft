@@ -1,12 +1,12 @@
 from cosmosis.runtime.declare import declare_module
 from cosmosis.datablock import names as section_names
 
-import haloeft.OneLoop as ZhengSong
+import haloeft.OneLoop as OneLoop
 
 import models.linear.params as lin
 
 
-class pipeline(ZhengSong.pipeline):
+class pipeline(OneLoop.pipeline):
 
     likes = section_names.likelihoods
 
