@@ -67,8 +67,7 @@ def add_folder(tree_path, archive_path, archive):
 
         if dir[0] != '.' \
             and dir_lower != '.idea' \
-            and dir_lower != 'data' \
-            and dir_lower != 'theory'\
+            and dir_lower != 'assets' \
             and dir_lower != 'output' \
             and dir_lower != 'plots' \
             and dir_lower != 'scripts' \
