@@ -4,12 +4,11 @@ import datetime
 
 import deploy
 
-bias_models = [ "coevolution", "NonlocalMinimal", "NonlocalAll", "linear", "MR" ]
+bias_models = [ "coevolution", "NonlocalMinimal", "linear", "MR" ]
 RSD_models = [ "EFT", "KaiserHalofit", "KaiserTree", "OneLoop" ]
 
 bias_folders = { "coevolution": "coevolution",
                  "NonlocalMinimal": "NonlocalMinimal",
-                 "NonlocalAll": "NonlocalAll",
                  "linear": "linear",
                  "MR": "MR" }
 
