@@ -5,6 +5,19 @@ from getdist import mcsamples as mcs
 from getdist import plots as gdp
 
 
+def ensure_folder(path):
+
+    # generate folder hierarchy if it does not already exist
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError, e:
+            if e.errno != os.errno.EEXIST:
+                raise
+
+    return path
+
+
 class analyse_core(object):
 
     def __init__(self, t, p):
@@ -43,33 +56,19 @@ class analyse_core(object):
 
 class analyse_cosmosis(analyse_core):
 
-    def __init__(self, t, p, root_path, cosmosis_file, out_file, mp, glb, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, t, p, root_path, cosmosis_file, out_file, ensemble_root_file, mp, glb, mixing_plot=None, stochastic_plot=None):
 
         super(analyse_cosmosis, self).__init__(t, p)
 
         # construct hierarchy of plot folders
-        mixing_folder = os.path.join(root_path, 'plots', 'mixing')
-        stochastic_folder = os.path.join(root_path, 'plots', 'stochastic')
-
-        # generate folder hierarchy if it does not already exist
-        if not os.path.exists(mixing_folder):
-            try:
-                os.makedirs(mixing_folder)
-            except OSError, e:
-                if e.errno != os.errno.EEXIST:
-                    raise
-
-        if not os.path.exists(stochastic_folder):
-            try:
-                os.makedirs(stochastic_folder)
-            except OSError, e:
-                if e.errno != os.errno.EEXIST:
-                    raise
+        mixing_folder = ensure_folder(os.path.join(root_path, 'plots', 'mixing'))
+        stochastic_folder = ensure_folder(os.path.join(root_path, 'plots', 'stochastic'))
+        getdist_folder = ensure_folder(os.path.join(root_path, 'GetDist_output'))
 
         # generate paths for GetDist-format output files
-        getdist_root = os.path.join(root_path, 'plots', out_file)
-        getdist_param_file = os.path.join(root_path, 'plots', out_file + '.paramnames')
-        getdist_chain_file = os.path.join(root_path, 'plots', out_file + '.txt')
+        getdist_root_file = os.path.join(getdist_folder, out_file)
+        getdist_param_file = os.path.join(getdist_folder, out_file + '.paramnames')
+        getdist_chain_file = os.path.join(getdist_folder, out_file + '.txt')
 
         # generate paths for output plots
         triangle_mixing_file = os.path.join(mixing_folder, out_file + '.png')
@@ -78,21 +77,49 @@ class analyse_cosmosis(analyse_core):
 
         # CONVERT COSMOSIS FILES TO GETDIST FORMAT
 
-        # cache list (really OrderedDict) of derived model parameters
-        model_params = self.get_model_params()
+        # write GetDist-compatible .params file, if it does not already exist
+        self._write_getdist_params_file(getdist_param_file)
+
+        # generate GetDist-compatible chain file from CosmoSIS output, if it does not already exist
+        self.__convert_getdist_chain_file(cosmosis_file, getdist_chain_file)
+
+
+        # IMPORT CONVERTED CHAIN FILES USING GETDIST
+
+        # import chains files using GetDist and cache its MCSamples object internally
+        self.__samples, self.bestfit, self.bestfit_chisquare = self.__bestfit_params(getdist_root_file, mp, glb)
+
+        if os.path.exists(ensemble_root_file):
+            self.__ensemble_samples, self.ensemble_bestfit, self.ensemble_bestfit_chisquare = \
+                self.__bestfit_params(ensemble_root_file, mp, glb)
+        else:
+            self.__ensemble_samples = None
+            self.ensemble_bestfit = None
+            self.ensemble_bestfit_chisquare = None
+
+
+        # generate triangle plots of mixing and stochastic parameters if requested
+        self.__generate_plots(mixing_plot, stochastic_plot, triangle_mixing_file, triangle_stochastic_file)
+
+
+    def _write_getdist_params_file(self, file):
 
         # generate GetDist .paramnames file if it does not already exist
-        if not os.path.exists(getdist_param_file):
+        if not os.path.exists(file):
 
-            print ':: generating GetDist .paramnames file "{f}"'.format(f=getdist_param_file)
+            # cache list (really OrderedDict) of derived model parameters
+            model_params = self.get_model_params()
+            bias_params = self.get_bias_params()
 
-            with open(getdist_param_file, 'w') as g:
+            print ':: generating GetDist .paramnames file "{f}"'.format(f=file)
+
+            with open(file, 'w') as g:
 
                 writer = csv.DictWriter(g, ['name', 'LaTeX'], delimiter='\t', restval='MISSING')
 
                 # write out parameter definitions for bias model parameters
-                for par in p:
-                    writer.writerow({'name': par, 'LaTeX': p[par]})
+                for par in bias_params:
+                    writer.writerow({'name': par, 'LaTeX': bias_params[par]})
 
                 # write out parameter definitions for derived model parameters (eg. c0 or sigmav)
                 for par in model_params:
@@ -100,22 +127,28 @@ class analyse_cosmosis(analyse_core):
 
         else:
 
-            print ':: GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=getdist_param_file)
+            print ':: GetDist .paramnames file "{f}" already exists: leaving intact'.format(f=file)
 
 
-        # generate GetDist-compatible chain file from CosmoSIS output, if it does not already exist
+    def __convert_getdist_chain_file(self, cosmosis_file, getdist_file):
 
-        if not os.path.exists(getdist_chain_file):
+        if not os.path.exists(getdist_file):
 
-            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=cosmosis_file, o=getdist_chain_file)
+            # cache list (really OrderedDict) of derived model parameters
+            model_params = self.get_model_params()
+            bias_params = self.get_bias_params()
+
+            params = list(bias_params.keys()) + list(model_params.keys())
+
+            print ':: converting CosmoSIS-format chain file "{s}" to GetDist-format chain file "{o}"'.format(s=cosmosis_file, o=getdist_file)
 
             # note p.keys() must return a list that is ordered in the correct way
-            input_columns = list(p.keys()) + list(model_params.keys()) + ['like']
-            output_columns = ['weight', 'like'] + list(p.keys()) + list(model_params.keys())
+            input_columns = params + ['like']
+            output_columns = ['weight', 'like'] + params
 
             table = ascii.read(cosmosis_file, Reader=ascii.NoHeader, names=input_columns)
 
-            with open(getdist_chain_file, 'w') as g:
+            with open(getdist_file, 'w') as g:
 
                 writer = csv.DictWriter(g, output_columns, delimiter='\t', restval='MISSING')
 
@@ -124,7 +157,7 @@ class analyse_cosmosis(analyse_core):
                     row_dict = {}
 
                     # populate with entries for bias model parameters
-                    for par in p:
+                    for par in bias_params:
                         row_dict.update({par: row[par]})
 
                     # populate with entries for derived model parameters (eg. c0 or sigmav)
@@ -138,14 +171,30 @@ class analyse_cosmosis(analyse_core):
 
         else:
 
-            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_file, o=getdist_chain_file)
+            print ':: GetDist-format chain file "{o}" already exists: leaving intact; no conversion of "{s}"'.format(s=cosmosis_file, o=getdist_file)
 
 
-        # IMPORT CONVERTED CHAIN FILES USING GETDIST
+    def __bestfit_params(self, getdist_root, mp, glb):
 
-        # import chains files using GetDist and cache its MCSamples object internally
+        # cache list (really OrderedDict) of derived model parameters
+        model_params = self.get_model_params()
+        bias_params = self.get_bias_params()
+
+        params = list(bias_params.keys()) + list(model_params.keys())
+
+        # drop front 40% of rows as burn-in; possibly too conservative
         analysis_settings = {'ignore_rows': 0.4}
-        self.__samples = mcs.loadMCSamples(getdist_root, settings=analysis_settings)
+        samples = mcs.loadMCSamples(getdist_root, settings=analysis_settings)
+
+        x = samples.getLikeStats()
+
+        r = {p: x.parWithName(p).bestfit_sample for p in params}
+        chisquare = self.compute_chisquare(r, mp, glb)
+
+        return samples, r, chisquare
+
+
+    def __generate_plots(self, mixing_plot, stochastic_plot, mixing_file, stochastic_file):
 
         if mixing_plot is not None:
 
@@ -153,7 +202,7 @@ class analyse_cosmosis(analyse_core):
 
             g = gdp.getSubplotPlotter()
             g.triangle_plot(self.__samples, mixing_plot, shaded=True)
-            g.export(triangle_mixing_file)
+            g.export(mixing_file)
 
         if stochastic_plot is not None:
 
@@ -161,14 +210,7 @@ class analyse_cosmosis(analyse_core):
 
             h = gdp.getSubplotPlotter()
             h.triangle_plot(self.__samples, stochastic_plot, shaded=True)
-            h.export(triangle_stochastic_file)
-
-        x = self.__samples.getLikeStats()
-
-        r = {p: x.parWithName(p).bestfit_sample for p in list(p.keys()) + list(model_params.keys())}
-
-        self.bestfit = r
-        self.bestfit_chisquare = self.compute_chisquare(r, mp, glb)
+            h.export(stochastic_file)
 
 
     def get_fit_point(self):
@@ -178,39 +220,48 @@ class analyse_cosmosis(analyse_core):
 
 class analyse_maxlike(analyse_core):
 
-    def __init__(self, t, p, root_path, maxlike_file, mp, glb):
+    def __init__(self, t, p, root_path, maxlike_file, ensemble_file, mp, glb):
 
         super(analyse_maxlike, self).__init__(t, p)
 
         # construct hierarchy of plot folders
-        plot_folder = os.path.join(root_path, 'plots')
-
-        if not os.path.exists(plot_folder):
-            try:
-                os.makedirs(plot_folder)
-            except OSError, e:
-                if e.errno != os.errno.EEXIST:
-                    raise
-
+        ensure_folder(os.path.join(root_path, 'plots'))
 
         # READ OUTPUT FILE GENERATED BY MAXLIKE
 
-        # this will consist of a single line giving the best-fit values of all parameters, including derived ones
+        # best-fit for this realization
+        self.bestfit, self.best_chisquare = self.__bestfit_params(maxlike_file, mp, glb)
+
+        # best-fit for ensemble average, if present
+        if os.path.exists(ensemble_file):
+            self.ensemble_bestfit, self.ensemble_best_chisquare = self.__bestfit_params(ensemble_file, mp, glb)
+        else:
+            self.ensemble_bestfit = None
+            self.ensemble_best_chisquare = None
+
+
+
+    def __bestfit_params(self, file, mp, glb):
 
         # cache OrderedDict of model parameters
         model_params = self.get_model_params()
+        bias_params = self.get_bias_params()
+
+        params = list(bias_params.keys()) + list(model_params.keys())
 
         # note p.keys() must return a list that is ordered in the correct way
-        input_columns = list(p.keys()) + list(model_params.keys()) + ['like']
+        input_columns = params + ['like']
 
-        table = ascii.read(maxlike_file, Reader=ascii.NoHeader, names=input_columns)
+        # read output file generated by maxlike sampler.
+        # this will consist of a single line giving the best-fit values of all parameters, including derived ones
+        table = ascii.read(file, Reader=ascii.NoHeader, names=input_columns)
 
         row = table[0]
 
-        r = {p: row[p] for p in list(p.keys() + list(model_params.keys()))}
+        r = {p: row[p] for p in params}
+        chisquare = self.compute_chisquare(r, mp, glb)
 
-        self.bestfit = r
-        self.best_chisquare = self.compute_chisquare(r, mp, glb)
+        return r, chisquare
 
 
     def get_fit_point(self):
@@ -219,14 +270,23 @@ class analyse_maxlike(analyse_core):
 
 
 
-def write_summary(analysis_list, root_path, out_file, mp, glb):
+def write_summary(real_list, root_path, out_file, mp, glb):
+    """Generates a GetDist-format summary file for all realizations, including the ensemble average if present.
+
+    :param real_list: list-like object containing analysis objects for each realization
+    :param root_path: root of output path
+    :param out_file: name of output file (without extension)
+    :param mp: make_parameters function
+    :param glb: get_linear_bias function
+    :return: None
+    """
 
     # filenames for GetDist chain-like output
     getdist_param_file = os.path.join(root_path, 'plots', out_file + '.paramnames')
     getdist_chain_file = os.path.join(root_path, 'plots', out_file + '.txt')
 
     # parameter lists from all realizations should be the same
-    params, model_params = __get_parameter_lists(analysis_list)
+    params, model_params = __get_parameter_lists(real_list)
 
     with open(getdist_param_file, 'w') as f:
 
@@ -264,9 +324,9 @@ def write_summary(analysis_list, root_path, out_file, mp, glb):
 
         writer = csv.DictWriter(f, columns, delimiter='\t', restval='MISSING')
 
-        for real in analysis_list:
+        for real in real_list:
 
-            rlz = analysis_list[real]
+            rlz = real_list[real]
 
             row = rlz.get_fit_point()
             tools = rlz.get_tools()
@@ -308,11 +368,20 @@ def __get_parameter_lists(analysis_list):
     return params, model_params
 
 
-def write_Pell(list, root_path, out_file, mp, glb):
+def write_Pell(real_list, root_path, out_file, mp, glb):
+    """For each realization, write a detailed 'Pell' file containing the fitted power spectrum and other comparisons.
 
-    for real in list:
+    :param real_list: list-like object containing analysis objects for each realization
+    :param root_path: root of output path
+    :param out_file: name of output file
+    :param mp: make_parameters function object
+    :param glb: get_linear_bias function object
+    :return: None
+    """
 
-        rlz = list[real]
+    for real in real_list:
+
+        rlz = real_list[real]
 
         p = os.path.join(root_path, 'plots', out_file + '_' + real + '_Pell.csv')
 

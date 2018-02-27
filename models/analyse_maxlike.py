@@ -28,16 +28,8 @@ inputs = {'ensemble': 'ensemble.txt',
           'r07': 'r07.txt', 'r08': 'r08.txt', 'r09': 'r09.txt',
           'r10': 'r10.txt'}
 
-outputs = {'ensemble': 'ensemble.txt',
-           'r01': 'r01', 'r02': 'r02', 'r03': 'r03', 'r04': 'r04',
-           'r05': 'r05', 'r06': 'r06', 'r07': 'r07', 'r08': 'r08',
-           'r09': 'r09', 'r10': 'r10'}
 
-mixing_params = None
-stochastic_params = None
-
-
-def f((realization_tag, file_name, root_path, params_module)):
+def f((realization_tag, file_name, ensemble_file_name, root_path, params_module)):
 
     try:
 
@@ -63,7 +55,8 @@ def f((realization_tag, file_name, root_path, params_module)):
 
         ptools = imp.load_source("params", params_module)
 
-        obj = asy.analyse_maxlike(t, ptools.param_dict, root_path, file_name,
+        obj = asy.analyse_maxlike(t, ptools.param_dict, root_path,
+                                  file_name, ensemble_file_name,
                                   ptools.make_params, ptools.get_linear_bias)
 
     except Exception as e:
@@ -108,6 +101,8 @@ if __name__ == '__main__':
 
         # check which region files exist
         output_path = os.path.join(path, 'output')
+        ensemble_file = os.path.join(output_path, inpust['ensemble'])
+
         realization_files = []
 
         for real in realizations:
@@ -116,7 +111,7 @@ if __name__ == '__main__':
 
             if os.path.exists(file):
 
-                realization_files.append((real, file, path, params_module))
+                realization_files.append((real, file, ensemble_file, path, params_module))
                 print "** added realization output '{p}' to analysis list".format(p=file)
 
         if len(realization_files) > 0:
