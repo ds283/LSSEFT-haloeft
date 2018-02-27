@@ -16,7 +16,7 @@ class tools(base):
         self.model_name = model_name
 
 
-    def compute_chisq_variation(self, P0, P2, P4):
+    def compute_chisq_variation(self, P0, P2, P4, label_prefix):
 
         P = np.concatenate((P0, P2, P4))
 
@@ -49,7 +49,7 @@ class tools(base):
             i_mask[i] = self.data.k_sample.mean_fit_mask[i]
 
             # if so, compute the chi-square up to this k-sample point; otherwise, ignore it
-            if (i_mask[i]):
+            if i_mask[i]:
 
                 # extend mask for the concatenated group (P0, P2, P4)
                 i_mask_full = np.concatenate((i_mask, i_mask, i_mask))
@@ -57,7 +57,7 @@ class tools(base):
                 # zero accumulator for chi-square
                 chisq = 0.0
 
-                # loop over all data regions:
+                # loop over all data realizations:
                 for r in self.data.regions:
                     # extract data products for this region
                     means = self.data.fit_means[r]
@@ -78,7 +78,7 @@ class tools(base):
                     Delta_cut = Ptheory_cut - means_cut
                     chisq += np.dot(np.dot(Delta_cut, inv_cov_cut), Delta_cut)
 
-                rval[self.data.k_sample.labels[i]] = chisq
+                rval[label_prefix + '_' + self.data.k_sample.labels[i]] = chisq
 
         return rval
 
@@ -140,7 +140,7 @@ class tools(base):
                 else:
                     row.update({'ireal': -99, 'chisq': -99, 'model': '-'})
 
-                # initialize accumulators used to sum over all regions
+                # initialize accumulators used to sum over all realizations
                 P0_theory_tot = 0
                 P2_theory_tot = 0
                 P4_theory_tot = 0
@@ -165,7 +165,7 @@ class tools(base):
                 P2_Delta_tot = 0
                 P4_Delta_tot = 0
 
-                # loop over regions
+                # loop over realizations
                 for r in self.data.regions:
                     means = self.data.raw_means[r]
                     variances = self.data.raw_variance[r]

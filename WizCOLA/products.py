@@ -166,7 +166,7 @@ class products(object):
         ensemble_Pk = np.concatenate((ensemble_P0, ensemble_P2, ensemble_P4))
 
         self.ensemble_means[tag] = ensemble_Pk
-        self.ensemble_variance[tag] = variances / (len(all_realizations) - 1.0)
+        self.ensemble_variance[tag] = variances
 
 
     def get_realization(self):
