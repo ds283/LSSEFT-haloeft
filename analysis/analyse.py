@@ -218,6 +218,11 @@ class analyse_cosmosis(analyse_core):
         return self.bestfit
 
 
+    def get_ensemble_fit_point(self):
+
+        return self.ensemble_bestfit
+
+
 class analyse_maxlike(analyse_core):
 
     def __init__(self, t, p, root_path, maxlike_file, ensemble_file, mp, glb):
@@ -238,7 +243,6 @@ class analyse_maxlike(analyse_core):
         else:
             self.ensemble_bestfit = None
             self.ensemble_best_chisquare = None
-
 
 
     def __bestfit_params(self, file, mp, glb):
@@ -269,6 +273,10 @@ class analyse_maxlike(analyse_core):
         return self.bestfit
 
 
+    def get_ensemble_fit_point(self):
+
+        return self.ensemble_bestfit
+
 
 def write_summary(real_list, root_path, out_file, mp, glb):
     """Generates a GetDist-format summary file for all realizations, including the ensemble average if present.
@@ -286,7 +294,8 @@ def write_summary(real_list, root_path, out_file, mp, glb):
     getdist_chain_file = os.path.join(root_path, 'plots', out_file + '.txt')
 
     # parameter lists from all realizations should be the same
-    params, model_params = __get_parameter_lists(real_list)
+    bias_params, model_params = __get_parameter_lists(real_list)
+    params = list(bias_params.keys()) + list(model_params.keys())
 
     with open(getdist_param_file, 'w') as f:
 
@@ -294,78 +303,118 @@ def write_summary(real_list, root_path, out_file, mp, glb):
 
         writer = csv.DictWriter(f, ['name', 'LaTeX'], delimiter='\t', restval='MISSING')
 
-        for p in params:
-            writer.writerow({'name': p, 'LaTeX': params[p]})
+        for p in bias_params:
+            writer.writerow({'name': p, 'LaTeX': bias_params[p]})
 
         for p in model_params:
             writer.writerow({'name': p + '*', 'LaTeX': model_params[p]})
 
-        writer.writerow({'name': r'chisq003*', 'LaTeX': r'\chi^2_{0.03}'})
-        writer.writerow({'name': r'chisq005*', 'LaTeX': r'\chi^2_{0.05}'})
-        writer.writerow({'name': r'chisq007*', 'LaTeX': r'\chi^2_{0.07}'})
-        writer.writerow({'name': r'chisq009*', 'LaTeX': r'\chi^2_{0.09}'})
-        writer.writerow({'name': r'chisq011*', 'LaTeX': r'\chi^2_{0.11}'})
-        writer.writerow({'name': r'chisq013*', 'LaTeX': r'\chi^2_{0.13}'})
-        writer.writerow({'name': r'chisq015*', 'LaTeX': r'\chi^2_{0.15}'})
-        writer.writerow({'name': r'chisq017*', 'LaTeX': r'\chi^2_{0.17}'})
-        writer.writerow({'name': r'chisq029*', 'LaTeX': r'\chi^2_{0.29}'})
-        writer.writerow({'name': r'chisq021*', 'LaTeX': r'\chi^2_{0.21}'})
-        writer.writerow({'name': r'chisq023*', 'LaTeX': r'\chi^2_{0.23}'})
-        writer.writerow({'name': r'chisq025*', 'LaTeX': r'\chi^2_{0.25}'})
-        writer.writerow({'name': r'chisq027*', 'LaTeX': r'\chi^2_{0.27}'})
-        writer.writerow({'name': r'chisq029*', 'LaTeX': r'\chi^2_{0.29}'})
+        writer.writerow({'name': r'bestfit_003*', 'LaTeX': r'\chi^2_{0.03}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_005*', 'LaTeX': r'\chi^2_{0.05}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_007*', 'LaTeX': r'\chi^2_{0.07}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_009*', 'LaTeX': r'\chi^2_{0.09}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_011*', 'LaTeX': r'\chi^2_{0.11}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_013*', 'LaTeX': r'\chi^2_{0.13}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_015*', 'LaTeX': r'\chi^2_{0.15}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_017*', 'LaTeX': r'\chi^2_{0.17}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_029*', 'LaTeX': r'\chi^2_{0.29}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_021*', 'LaTeX': r'\chi^2_{0.21}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_023*', 'LaTeX': r'\chi^2_{0.23}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_025*', 'LaTeX': r'\chi^2_{0.25}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_027*', 'LaTeX': r'\chi^2_{0.27}(\mathrm{best})'})
+        writer.writerow({'name': r'bestfit_029*', 'LaTeX': r'\chi^2_{0.29}(\mathrm{best})'})
+
+        writer.writerow({'name': r'ensemble_003*', 'LaTeX': r'\chi^2_{0.03}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_005*', 'LaTeX': r'\chi^2_{0.05}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_007*', 'LaTeX': r'\chi^2_{0.07}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_009*', 'LaTeX': r'\chi^2_{0.09}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_011*', 'LaTeX': r'\chi^2_{0.11}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_013*', 'LaTeX': r'\chi^2_{0.13}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_015*', 'LaTeX': r'\chi^2_{0.15}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_017*', 'LaTeX': r'\chi^2_{0.17}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_029*', 'LaTeX': r'\chi^2_{0.29}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_021*', 'LaTeX': r'\chi^2_{0.21}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_023*', 'LaTeX': r'\chi^2_{0.23}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_025*', 'LaTeX': r'\chi^2_{0.25}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_027*', 'LaTeX': r'\chi^2_{0.27}(\mathrm{ensemble})'})
+        writer.writerow({'name': r'ensemble_029*', 'LaTeX': r'\chi^2_{0.29}(\mathrm{ensemble})'})
 
     with open(getdist_chain_file, 'w') as f:
 
         print ':: generating GetDist-format chain summary file "{f}"'.format(f=getdist_chain_file)
 
-        columns = ['weight', 'like'] + list(params.keys()) + list(model_params.keys()) + \
-                  ['0.03', '0.05', '0.07', '0.09', '0.11', '0.13', '0.15', '0.17', '0.19', '0.21', '0.23', '0.25', '0.27', '0.29']
+        chisq_points = ['0.03', '0.05', '0.07', '0.09', '0.11', '0.13', '0.15', '0.17', '0.19', '0.21', '0.23', '0.25', '0.27', '0.29']
+
+        best_chisq_points = ['best_' + label for label in chisq_points]
+        ensemble_chisq_points = ['ensemble_' + label for label in chisq_points]
+
+        columns = ['weight', 'like'] + params + best_chisq_points + ensemble_chisq_points
 
         writer = csv.DictWriter(f, columns, delimiter='\t', restval='MISSING')
 
         for real in real_list:
 
+            # get analysis object for realization, and extract its toolkit
             rlz = real_list[real]
-
-            row = rlz.get_fit_point()
             tools = rlz.get_tools()
 
+            # initial entries in the row dictionary can be the best-fit point
+            row = rlz.get_fit_point()
+
+            # turn these parameters into a parameter dictionary and then convert to a coefficient dictionary
             param_dict = mp(row)
             coeffs = tools.make_coeff_dict(param_dict)
+
+            # build P_ell at best-fit-point
             P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, row, glb(row))
 
-            deviations = tools.compute_chisq_variation(P0, P2, P4)
+            # build cumulative chi-square using best-fit point
+            best_deviations = tools.compute_chisq_variation(P0, P2, P4, 'best')
+            row.update(best_deviations)
 
-            row.update(deviations)
+            # get ensemble-average best-fit point, if one exists
+            ensemble_best_fit = rlz.get_ensemble_fit_point()
+
+            if ensemble_best_fit is not None:
+
+                # build parameter and coefficient dictionaries
+                param_dict = mp(ensemble_best_fit)
+                coeffs = tools.make_coeff_dict(param_dict)
+
+                # build P_ell at ensemble-average best-fit point
+                P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, ensemble_best_fit, glb(ensemble_best_fit))
+
+                # build cumulative chi-square at ensemble-average best-fit point
+                ensemble_deviations = tools.compute_chisq_variation(P0, P2, P4, 'ensemble')
+                row.update(ensemble_deviations)
+
             row.update({'weight': 1, 'like': 1})
-
             writer.writerow(row)
 
 
 def __get_parameter_lists(analysis_list):
 
-    params = None
+    bias_params = None
     model_params = None
 
     for r in analysis_list:
 
-        p = analysis_list[r].get_bias_params()
-        p_model = analysis_list[r].get_model_params()
+        bp = analysis_list[r].get_bias_params()
+        mp = analysis_list[r].get_model_params()
 
-        if params is not None:
-            if params != p:
+        if bias_params is not None:
+            if bias_params != bp:
                 raise RuntimeError
         else:
-            params = p
+            bias_params = bp
 
         if model_params is not None:
-            if model_params != p_model:
+            if model_params != mp:
                 raise RuntimeError
         else:
-            model_params = p_model
+            model_params = mp
 
-    return params, model_params
+    return bias_params, model_params
 
 
 def write_Pell(real_list, root_path, out_file, mp, glb):

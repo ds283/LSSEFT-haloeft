@@ -16,7 +16,7 @@ class tools(base):
         self.model_name = model_name
 
 
-    def compute_chisq_variation(self, P0, P2, P4):
+    def compute_chisq_variation(self, P0, P2, P4, label_prefix):
 
         P = np.concatenate((P0, P2, P4))
 
@@ -49,7 +49,7 @@ class tools(base):
             i_mask[i] = self.data.k_sample.mean_fit_mask[i]
 
             # if so, compute the chi-square up to this k-sample point; otherwise, ignore it
-            if (i_mask[i]):
+            if i_mask[i]:
 
                 # extend mask for the concatenated group (P0, P2, P4)
                 i_mask_full = np.concatenate((i_mask, i_mask, i_mask))
@@ -78,7 +78,7 @@ class tools(base):
                     Delta_cut = Ptheory_cut - means_cut
                     chisq += np.dot(np.dot(Delta_cut, inv_cov_cut), Delta_cut)
 
-                rval[self.data.k_sample.labels[i]] = chisq
+                rval[label_prefix + '_' + self.data.k_sample.labels[i]] = chisq
 
         return rval
 
