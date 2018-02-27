@@ -38,7 +38,7 @@ mixing_params = None
 stochastic_params = None
 
 
-def f((realization_tag, file_name, ensemble_file_name, root_path, params_module)):
+def f((realization_tag, file_name, root_path, params_module)):
 
     try:
 
@@ -65,7 +65,7 @@ def f((realization_tag, file_name, ensemble_file_name, root_path, params_module)
         ptools = imp.load_source("params", params_module)
 
         obj = asy.analyse_cosmosis(t, ptools.param_dict, root_path, file_name,
-                                   outputs[realization_tag], ensemble_file_name,
+                                   outputs[realization_tag], outputs['ensemble'],
                                    ptools.make_params, ptools.get_linear_bias,
                                    mixing_params, stochastic_params)
 
@@ -111,7 +111,6 @@ if __name__ == '__main__':
 
         # check which region files exist
         output_path = os.path.join(path, 'output')
-        ensemble_file = os.path.join(output_path, outputs['ensemble'])
 
         realization_files = []
 
@@ -121,7 +120,7 @@ if __name__ == '__main__':
 
             if os.path.exists(file):
 
-                realization_files.append((real, file, ensemble_file, path, params_module))
+                realization_files.append((real, file, path, params_module))
                 print "** added realization output '{p}' to analysis list".format(p=file)
 
         if len(realization_files) > 0:

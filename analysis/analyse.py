@@ -56,7 +56,7 @@ class analyse_core(object):
 
 class analyse_cosmosis(analyse_core):
 
-    def __init__(self, t, p, root_path, cosmosis_file, out_file, ensemble_root_file, mp, glb, mixing_plot=None, stochastic_plot=None):
+    def __init__(self, t, p, root_path, cosmosis_file, out_file, ensemble_file, mp, glb, mixing_plot=None, stochastic_plot=None):
 
         super(analyse_cosmosis, self).__init__(t, p)
 
@@ -69,6 +69,9 @@ class analyse_cosmosis(analyse_core):
         getdist_root_file = os.path.join(getdist_folder, out_file)
         getdist_param_file = os.path.join(getdist_folder, out_file + '.paramnames')
         getdist_chain_file = os.path.join(getdist_folder, out_file + '.txt')
+
+        ensemble_root_file = os.path.join(getdist_folder, ensemble_file)
+        ensemble_chain_file = os.path.join(getdist_folder, ensemble_file + '.txt')
 
         # generate paths for output plots
         triangle_mixing_file = os.path.join(mixing_folder, out_file + '.png')
@@ -89,7 +92,7 @@ class analyse_cosmosis(analyse_core):
         # import chains files using GetDist and cache its MCSamples object internally
         self.__samples, self.bestfit, self.bestfit_chisquare = self.__bestfit_params(getdist_root_file, mp, glb)
 
-        if os.path.exists(ensemble_root_file):
+        if os.path.exists(ensemble_chain_file):
             self.__ensemble_samples, self.ensemble_bestfit, self.ensemble_bestfit_chisquare = \
                 self.__bestfit_params(ensemble_root_file, mp, glb)
         else:
