@@ -1,6 +1,7 @@
 from astropy.io import ascii
 import csv
 import os
+import datetime
 from getdist import mcsamples as mcs
 from getdist import plots as gdp
 
@@ -72,6 +73,7 @@ class analyse_cosmosis(analyse_core):
 
         ensemble_root_file = os.path.join(getdist_folder, ensemble_file)
         ensemble_chain_file = os.path.join(getdist_folder, ensemble_file + '.txt')
+        ensemble_lock_file = ensemble_chain_file + '.lock'
 
         # generate paths for output plots
         triangle_mixing_file = os.path.join(mixing_folder, out_file + '.png')
@@ -92,7 +94,8 @@ class analyse_cosmosis(analyse_core):
         # import chains files using GetDist and cache its MCSamples object internally
         self.__samples, self.bestfit, self.bestfit_chisquare = self.__bestfit_params(getdist_root_file, mp, glb)
 
-        if os.path.exists(ensemble_chain_file):
+        # use lockfile semaphore to avoid race condition where we read an incompletely-converted chain
+        if os.path.exists(ensemble_chain_file) and not os.path.exists(ensemble_lock_file):
             self.__ensemble_samples, self.ensemble_bestfit, self.ensemble_bestfit_chisquare = \
                 self.__bestfit_params(ensemble_root_file, mp, glb)
         else:
@@ -151,6 +154,13 @@ class analyse_cosmosis(analyse_core):
 
             table = ascii.read(cosmosis_file, Reader=ascii.NoHeader, names=input_columns)
 
+            # use 'lock' file as a semaphore to avoid race conditions with reading/writing the converted file
+            lockfile = getdist_file + '.lock'
+
+            with open(lockfile, 'w') as g:
+
+                g.write(datetime.datetime.now().strftime("%d-%B-%Y %H:%M:%S"))
+
             with open(getdist_file, 'w') as g:
 
                 writer = csv.DictWriter(g, output_columns, delimiter='\t', restval='MISSING')
@@ -171,6 +181,8 @@ class analyse_cosmosis(analyse_core):
                     row_dict.update({'weight': 1, 'like': minus_log_lik})
 
                     writer.writerow(row_dict)
+
+            os.remove(lockfile)
 
         else:
 
