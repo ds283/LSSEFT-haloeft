@@ -26,7 +26,7 @@ def make_config_block(realization, use_Halofit, fit_kmin=0.02, fit_kmax=0.30, re
     if use_Halofit:
         my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_HALOFIT_halo@z=0_kWiggleZ.sqlite")
     else:
-        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_CAMB_halo_full2@z=0_kWiggleZ.sqlite")
+        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/Lucia_SPT+Advective.sqlite")
 
     my_config["HaloEFT", "model"] = 0
     my_config["HaloEFT", "growth_params"] = 0
