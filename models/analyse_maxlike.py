@@ -101,7 +101,7 @@ if __name__ == '__main__':
 
         # check which region files exist
         output_path = os.path.join(path, 'output')
-        ensemble_file = os.path.join(output_path, inpust['ensemble'])
+        ensemble_file = os.path.join(output_path, inputs['ensemble'])
 
         realization_files = []
 
