@@ -1,13 +1,11 @@
 import numpy as np
-from collections import OrderedDicterr, y
+from collections import OrderedDict
 
 import sqlite3
 
 
 # container class for EFT theory products
 class database(object):
-
-
 
 
     def __init__(self, my_config, k_sample):
@@ -69,7 +67,7 @@ class database(object):
                 self.payload[tag] = self.__import_counterterm(conn, tag)
 
             # need f to compute mu^6 counterterm, so read its value
-            self.__import_f(conn, data)
+            self.__import_f()
 
         # finally, construct stochastic counterterms
         ks = self.k_sample.conv_ks
@@ -137,7 +135,7 @@ class database(object):
         table_name = 'counterterms_{tag}'.format(tag=tag)
 
         # execute SQL query
-        cursor.execute("SELECT k AS k, P0 AS P0, P2 AS P2, P4 AS P4 FROM + " + table_name + " ORDER BY k;")
+        cursor.execute("SELECT k AS k, P0 AS P0, P2 AS P2, P4 AS P4 FROM " + table_name + " ORDER BY k;")
 
         ks = []
         P0s = []
@@ -156,18 +154,6 @@ class database(object):
         return np.array([ np.asarray(P0s), np.asarray(P2s), np.asarray(P4s) ])
 
 
-    def __import_f(self, conn, data):
+    def __import_f(self):
 
-        # obtain database cursor
-        cursor = conn.cursor()
-
-        # execute SQL query
-        cursor.execute("SELECT f_linear FROM f_factors WHERE zid=:zid;", data)
-
-        # read value
-        flist = cursor.fetchone()
-
-        if flist is None:
-            raise LookupError
-
-        self.f = flist[0]
+        self.f = 0.7039874052239977
