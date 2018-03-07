@@ -42,22 +42,31 @@ def f((realization_tag, file_name, root_path, params_module)):
 
     try:
 
-        if 'Halofit' in root_path:
-            config = make_config_block(realization_numbers[realization_tag], True)
+        if 'EFT' in root_path:
+            rsd_model = 'EFT'
+        elif 'KaiserTree' in root_path:
+            rsd_model = 'KaiserTree'
+        elif 'KaiserHalofit' in root_path:
+            rsd_model = 'KaiserHalofit'
+        elif 'OneLoop' in root_path:
+            rsd_model = 'OneLoop'
         else:
-            config = make_config_block(realization_numbers[realization_tag], False)
+            print "Cannot deduce RSD model used by '{p}'".format(p=root_path)
+            raise RuntimeError
+
+        config = make_config_block(realization_numbers[realization_tag], rsd_model)
 
         ks = WizCOLA.ksamples(config)
         data = WizCOLA.products(config, ks)
 
-        if 'EFT' in root_path:
+        if rsd_model is 'EFT':
             theory = EFT.theory(config, ks)
-        elif 'Kaiser' in root_path:
+        elif rsd_model is 'KaiserTree' or rsd_model is 'KaiserHalofit':
             theory = Kaiser.theory(config, ks)
-        elif 'OneLoop' in root_path or 'OneLoop' in root_path:
+        elif rsd_model is 'OneLoop':
             theory = OneLoop.theory(config, ks)
         else:
-            print "Cannot deduce RSD model used by '{p}'".format(p=root_path)
+            print "Unknown RSD model label '{p}'".format(p=rsd_model)
             raise RuntimeError
 
         t = heft.tools(root_path, data, theory)
