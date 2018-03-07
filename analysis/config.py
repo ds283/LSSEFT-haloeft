@@ -1,7 +1,7 @@
 import os
 
 
-def make_config_block(realization, use_Halofit, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
+def make_config_block(realization, rsd_model, fit_kmin=0.02, fit_kmax=0.30, ren_kmin=0.02, ren_kmax=0.30):
 
     # use a dictionary to mimic the CosmoSIS datablock API
     my_config = {}
@@ -23,10 +23,15 @@ def make_config_block(realization, use_Halofit, fit_kmin=0.02, fit_kmax=0.30, re
 
     my_config["HaloEFT", "realization"] = realization
 
-    if use_Halofit:
-        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_HALOFIT_halo@z=0_kWiggleZ.sqlite")
+    if rsd_model is 'EFT' or rsd_model is 'OneLoop':
+        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_CAMB_halo_full2@z=044_kWiggleZ.sqlite")
+    elif rsd_model is 'KaiserTree':
+        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_CAMB_halo_Kaiser@z=044_kWiggleZ.sqlite")
+    elif rsd_model is 'KaiserHalofit':
+        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_HALOFIT_halo_Kaiser@z=044_kWiggleZ.sqlite")
     else:
-        my_config["HaloEFT", "theory_db"] = os.path.join(root, "theory/WizCOLA_CAMB_halo_full2@z=0_kWiggleZ.sqlite")
+        print "Unknown RSD model label '{p}'".format(p=rsd_model)
+        raise RuntimeError
 
     my_config["HaloEFT", "model"] = 0
     my_config["HaloEFT", "growth_params"] = 0
