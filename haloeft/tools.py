@@ -83,7 +83,7 @@ class tools(base):
         return rval
 
 
-    def make_summary_plot(self, plot_file, P0, P2, P4):
+    def make_goodness_of_fit_plot(self, plot_file, P0, P2, P4):
 
         P = np.concatenate((P0, P2, P4))
 

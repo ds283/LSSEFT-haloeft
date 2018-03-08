@@ -149,8 +149,12 @@ if __name__ == '__main__':
 
             ptools = imp.load_source("params", params_module)
 
-            asy.write_summary(obj_list, path, 'ensemble', ptools.make_params, ptools.get_linear_bias)
-            asy.write_Pell(obj_list, path, 'ensemble', ptools.make_params, ptools.get_linear_bias)
+            # write summary CSV file of best-fit parameter values and chi-squares (as a function of k)
+            asy.write_summary(obj_list, path, 'bestfit_chisq', ptools.make_params, ptools.get_linear_bias)
+
+            # write more detailed CSV filea containing best-fit power spectra and WizCOLA data points,
+            # both for best-fit point and ensemble-average point (if exists)
+            asy.write_bestfit_plots(obj_list, path, 'bestfit', 'ensemblefit', ptools.make_params, ptools.get_linear_bias)
 
         else:
 

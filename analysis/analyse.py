@@ -298,7 +298,6 @@ def write_summary(real_list, root_path, out_file, mp, glb):
 
     :param real_list: list-like object containing analysis objects for each realization
     :param root_path: root of output path
-    :param out_file: name of output file (without extension)
     :param mp: make_parameters function
     :param glb: get_linear_bias function
     :return: None
@@ -432,12 +431,13 @@ def __get_parameter_lists(analysis_list):
     return bias_params, model_params
 
 
-def write_Pell(real_list, root_path, out_file, mp, glb):
+def write_bestfit_plots(real_list, root_path, bestfit_file, ensemble_file, mp, glb):
     """For each realization, write a detailed 'Pell' file containing the fitted power spectrum and other comparisons.
 
     :param real_list: list-like object containing analysis objects for each realization
     :param root_path: root of output path
-    :param out_file: name of output file
+    :param bestfit_file: output file for per-realization best fit
+    :param ensemble_file: output file for ensemble-average best fit, if exists
     :param mp: make_parameters function object
     :param glb: get_linear_bias function object
     :return: None
@@ -446,14 +446,28 @@ def write_Pell(real_list, root_path, out_file, mp, glb):
     for real in real_list:
 
         rlz = real_list[real]
+        tools = rlz.get_tools()
 
-        p = os.path.join(root_path, 'plots', out_file + '_' + real + '_Pell.csv')
+        # generate fit file for best-fit power spectrum
+        p = os.path.join(root_path, 'plots', bestfit_file + '_' + real + '.csv')
 
         bestfit = rlz.get_fit_point()
-        tools = rlz.get_tools()
 
         params = mp(bestfit)
         coeffs = tools.make_coeff_dict(params)
         P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, bestfit, glb(bestfit))
 
-        tools.make_summary_plot(p, P0, P2, P4)
+        tools.make_goodness_of_fit_plot(p, P0, P2, P4)
+
+        # generate fit file for ensemble-average power spectru, if exists
+        p = os.path.join(root_path, 'plots', ensemble_file + '_' + real + '.csv')
+
+        bestfit = rlz.get_ensemble_fit_point()
+
+        if bestfit is not None:
+
+            params = mp(bestfit)
+            coeffs = tools.make_coeff_dict(params)
+            P0, P2, P4 = tools.theory.build_theory_P_ell(coeffs, bestfit, glb(bestfit))
+
+            tools.make_goodness_of_fit_plot(p, P0, P2, P4)
